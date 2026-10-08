@@ -1,0 +1,12 @@
+{
+  "project_name": "VANTA_GATE_your_initials_20261009",
+  "baseline_timeline_name": "BASELINE",
+  "timeline_name": "VANTA_GATE_your_initials_20261009_ASSEMBLY_V1",
+  "clips": [
+    {"source_path": "D:/controlled-media/clip-01.mov", "source_in_frame": 0, "source_out_frame": 30, "timeline_start_frame": 0, "track_index": 1},
+    {"source_path": "D:/controlled-media/clip-02.mov", "source_in_frame": 10, "source_out_frame": 40, "timeline_start_frame": 30, "track_index": 1},
+    {"source_path": "D:/controlled-media/clip-03.mov", "source_in_frame": 20, "source_out_frame": 50, "timeline_start_frame": 60, "track_index": 1},
+    {"source_path": "D:/controlled-media/clip-04.mov", "source_in_frame": 30, "source_out_frame": 60, "timeline_start_frame": 90, "track_index": 1},
+    {"source_path": "D:/controlled-media/clip-05.mov", "source_in_frame": 40, "source_out_frame": 70, "timeline_start_frame": 120, "track_index": 1}
+  ]
+}

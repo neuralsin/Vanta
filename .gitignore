@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+data/
+runs/
+models/
+cache/
+.env
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal

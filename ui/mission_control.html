@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VANTA · Mission Control</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101215;--panel:#181b20;--line:#2b3038;--muted:#929ba8;--text:#e9edf2;--green:#70d7a1;--yellow:#f1c56b;--red:#ef7777;--blue:#83b6ff}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Segoe UI,sans-serif}
+    header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid var(--line);background:#14171b;position:sticky;top:0}
+    h1{font-size:19px;margin:0;letter-spacing:.08em}header span,.muted{color:var(--muted)}main{max-width:1280px;margin:24px auto;padding:0 20px;display:grid;gap:16px}
+    .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}.panel{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:18px;min-width:0}
+    button,select{background:#242a31;border:1px solid #424a55;color:var(--text);border-radius:6px;padding:8px 12px;cursor:pointer}button:hover{border-color:var(--blue)}.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;margin:0 0 14px}.summary{display:flex;gap:18px;flex-wrap:wrap}.metric{min-width:90px}.metric b{display:block;font-size:24px}.metric span{font-size:12px;color:var(--muted)}
+    .gates,.events{max-height:460px;overflow:auto}.row{padding:10px 0;border-top:1px solid var(--line)}.row:first-child{border-top:0}.pill{font-size:11px;padding:2px 8px;border-radius:999px;background:#242a31;margin-right:8px}.PASS{color:var(--green)}.PARTIAL{color:var(--yellow)}.BLOCKED{color:var(--red)}
+    .event{display:grid;grid-template-columns:90px 1fr auto;gap:10px;padding:9px 0;border-top:1px solid var(--line)}.event small{color:var(--muted)}code{color:var(--blue)}
+    .notice{border-left:3px solid var(--yellow);padding:10px 12px;background:#211e17;color:#e8d6aa}.footer{color:var(--muted);font-size:12px;padding:2px 0 24px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}header{padding:14px}.event{grid-template-columns:1fr auto}}
+  </style>
+</head>
+<body>
+  <header><h1>VANTA <span>MISSION CONTROL</span></h1><span id="connection">Connecting…</span></header>
+  <main>
+    <div class="notice">Phase 1 infrastructure view. Resolve actions stay disabled until the corresponding live integration gates pass. No simulated edit is reported as complete.</div>
+    <section class="panel"><h2>Environment &amp; gate status</h2><div class="summary" id="summary"></div><div class="muted" id="resolveStatus" style="margin-top:12px">Checking local Resolve scripting connection…</div></section>
+    <section class="panel"><h2>Run manifests</h2><div class="controls"><button id="newRun">Create reviewable run</button><select id="runSelect" aria-label="Select run"><option value="">No run selected</option></select><select id="modeSelect" aria-label="Run mode"><option>WATCH</option><option>STEP</option><option>TURBO</option></select><span class="muted">Pause, Step, Stop, and Undo activate only when a gate-verified live executor is attached.</span></div><div id="controlStatus" class="muted" style="margin-top:10px"></div></section>
+    <div class="grid">
+      <section class="panel"><h2>Feasibility gates</h2><div class="gates" id="gates">Loading capability report…</div></section>
+      <section class="panel"><h2>Persistent event stream</h2><div class="events" id="events">No run events yet.</div></section>
+    </div>
+    <div class="footer">Local only · SQLite WAL event history · page refreshes gate evidence every 30 seconds</div>
+  </main>
+  <script>
+    const fmt = n => (Number(n || 0) / 1073741824).toFixed(1) + ' GB';
+    async function refreshCaps(){
+      const r=await fetch('/api/capabilities'); if(!r.ok) throw new Error(await r.text()); const c=await r.json();
+      const gpu=c.hardware?.gpus?.[0]||{}; const summary=document.getElementById('summary');
+      summary.innerHTML=`<div class="metric"><b>${c.resolve?.version||'Not found'}</b><span>Resolve</span></div><div class="metric"><b>${fmt(c.hardware?.ram_bytes)}</b><span>System RAM</span></div><div class="metric"><b>${fmt(gpu.vram_total_bytes||gpu.adapter_ram_bytes)}</b><span>${gpu.name||'GPU'} VRAM</span></div><div class="metric"><b>${fmt(c.resource_budget?.all_fixed_disk_free_bytes||c.resource_budget?.free_disk_bytes)}</b><span>Free fixed-disk space</span></div><div class="metric"><b>${c.summary?.pass||0} / ${Object.keys(c.gates||{}).length}</b><span>Gates passed</span></div>`;
+      document.getElementById('gates').innerHTML=Object.entries(c.gates||{}).map(([id,g])=>`<div class="row"><span class="pill ${g.status}">${g.status}</span><b>${id}</b><div class="muted">${g.reason}</div>${g.fallback?`<small>Fallback: ${g.fallback}</small>`:''}</div>`).join('');
+    }
+    async function refreshResolve(){const el=document.getElementById('resolveStatus');try{const r=await fetch('/api/resolve/status');const d=await r.json();el.textContent=d.connected?`Read-only Resolve connection: ${JSON.stringify(d.version||'version unknown')} · ${d.project_name||'no current project'} · no mutation gates passed.`:`Resolve scripting not connected: ${d.reason||'not running or Local scripting is disabled'}`;el.style.color=d.connected?'var(--green)':'var(--yellow)'}catch(e){el.textContent='Resolve probe failed: '+e.message}}
+    let last=0; async function refreshEvents(){const r=await fetch(`/api/events?after=${last}`);if(!r.ok)return;const items=await r.json();if(!items.length)return;const box=document.getElementById('events');if(box.textContent==='No run events yet.')box.textContent='';for(const e of items){last=Math.max(last,e.sequence);const row=document.createElement('div');row.className='event';row.innerHTML=`<small>${new Date(e.timestamp).toLocaleTimeString()}</small><span><b>${e.stage}</b> · ${e.action}<br><small>${e.because?.join(', ')||e.error||''}</small></span><code>${e.status}</code>`;box.prepend(row)}}
+    async function refreshRuns(){const selected=document.getElementById('runSelect').value;const r=await fetch('/api/runs');if(!r.ok)return;const items=await r.json();const s=document.getElementById('runSelect');s.innerHTML='<option value="">Select a run</option>'+items.map(x=>`<option value="${x.run_id}">${x.project_id} · ${x.run_id.slice(-8)} · ${x.status}</option>`).join('');if(items.some(x=>x.run_id===selected))s.value=selected}
+    document.getElementById('newRun').onclick=async()=>{const project=prompt('Project name for this reviewable run:');if(!project)return;const mode=document.getElementById('modeSelect').value;const r=await fetch('/api/runs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project_id:project,artifact_root:'managed-by-vanta',run_mode:mode,autonomy:'ASSISTED'})});const d=await r.json();document.getElementById('controlStatus').textContent=r.ok?`Created persisted run ${d.run_id}. No Resolve edits were started.`:(d.detail||'Run creation failed');await refreshRuns();if(r.ok)document.getElementById('runSelect').value=d.run_id};
+    refreshCaps().catch(e=>{document.getElementById('gates').textContent=e.message});refreshResolve();refreshEvents();refreshRuns();setInterval(()=>refreshCaps().catch(()=>{}),30000);setInterval(refreshResolve,30000);setInterval(refreshEvents,1000);setInterval(refreshRuns,5000);
+    document.getElementById('connection').textContent='Local API';
+  </script>
+</body>
+</html>
