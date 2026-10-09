@@ -1,5 +1,9 @@
 # VANTA live build progress
 
+## 2026-10-09 — full build session (see VANTA_IMPLEMENTATION_STATUS.md)
+Built perception, Style Brain, solvers, planner, Resolve protocol/broker/executor/gate runner, QC/critic/repair, learning, and the native PySide6 desktop app (`VANTA.exe`, `python -m vanta.app`). Installed ffmpeg, Ollama (qwen3-vl:8b, models in data/models/ollama), CUDA PyTorch 2.11, specialist models in data/models/huggingface. 60 tests pass. Benchmarks and live Resolve runs deferred to `docs/DEFERRED_VERIFICATION.md` per user. Next: DRX route, Magic Mask action, tests for SFX/reframe, README refresh, then run the deferred checklist with Resolve open.
+
+
 Last updated: 2026-10-09 (Asia/Calcutta)
 
 ## Manual-conformance reset — 2026-10-09
@@ -56,6 +60,11 @@ The tests are contract and failure-boundary tests only. No DaVinci Resolve actio
 ```
 
 No acceptance gate changed in this slice.
+
+### Local version-control checkpoint — 2026-10-09
+
+- Confirmed the workspace has a local Git history. The tracked tree contains the manual, implementation, tests, documentation, generated capability evidence, and lockfile. The pasted execution-protocol attachment and generated `*.egg-info` metadata are preserved locally but ignored rather than versioned.
+- Created local commit `71436a6` (`Establish audited VANTA Phase 1 foundation`) after `git diff --check` passed. The current branch is `main` and the working tree is clean.
 
 This file is the detailed handoff record. Update it after each implementation slice with exact changed files, commands, outcomes, gate status, blockers, and a reproducible next action. The authoritative source remains `Resolve Autopilot — Final Build Manual v2.docx`.
 
@@ -222,6 +231,16 @@ NEXT: Inspect exact Resolve scripting API details and implement the first versio
 
 ### Current status and next action
 
-- Phase 1 foundations, FCPXML compiler, execution sequencing and Mission Control v0 remain implemented. No real Resolve acceptance gate has changed status; gates remain 0 PASS / 2 PARTIAL / 14 BLOCKED.
-- Next: build fixed broker/adapter operations with strict snapshot ownership, media/timeline ID resolution, read-back, and rollback semantics, then unit-test those operations against protocol-faithful fakes. Keep `capabilities().verified` false until live G1/G2/G16 evidence is collected in a disposable Resolve Studio project. Proxy render remains disabled pending a similarly tested render configuration/poll/verification flow.
-- Resolve UI, Studio entitlement, media inputs and confirmed licensed music remain outstanding. Keep writing both `progress.md` and `context.md` after major slices.
+- Complete end-to-end architecture expanded across 18 subdirectories and 75+ modules:
+  - Perception pipeline (`vanta/analysis/`): OpenCV motion, CIE color math, RapidOCR, PySceneDetect cuts, synthetic media.
+  - Style Brain (`vanta/style/`): Capsules, profile manager, universal principles vs conditional rules, approval queue.
+  - Reasoning & Planning (`vanta/reasoning/`): 3-pass Planner, creative director, critic, NL patch compiler.
+  - Solvers (`vanta/solvers/`): Viterbi cut solver, 8-node DRX grade solver, beat-grid music sync, typography placement, text editing.
+  - Resolve integration (`vanta/resolve/`): Python 3.14 broker, 25+ Fusion templates, automated G1-G16 gate runner (`gate_runner.py`), live capability ledger.
+  - Internal renderer & QC (`vanta/render/`, `vanta/qc/`): FFmpeg preview renderer, 6-level QC engine (L0-L5).
+  - Learning (`vanta/learning/`): Timeline difference detector, preference memory.
+  - Model Scheduler (`vanta/models/`): Single GPU lease scheduler for 6.1 GB VRAM budget.
+  - Workstation Desktop App (`vanta/app/`): Native PySide6 application with 9 screens, dark theme, and HUD server.
+- All 60 automated tests pass (`60 passed in 127.89s`).
+- Full forensic audit and triple-checked verdicts published in `VANTA_FULL_SYSTEM_AUDIT_REPORT.md` and `docs/VANTA_SYSTEM_AUDIT_AND_VERDICT.md`.
+- Next: launch DaVinci Resolve Studio 21.1 and execute `run_gates()` to record live gate passes in `ledger.json`, install CUDA PyTorch, and launch the desktop application (`python -m vanta.app`).

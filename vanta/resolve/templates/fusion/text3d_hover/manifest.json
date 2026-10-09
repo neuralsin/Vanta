@@ -1,0 +1,174 @@
+{
+  "name": "text3d_hover",
+  "version": "1.0.0",
+  "category": "3d",
+  "description": "Extruded 3D title hovering in scene space (Text3D, Merge3D, Camera3D, Renderer3D). Needs a spatial reason.",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "text",
+      "type": "string",
+      "required": true,
+      "default": null,
+      "max_length": 120
+    },
+    {
+      "name": "font",
+      "type": "font",
+      "required": false,
+      "default": "Arial"
+    },
+    {
+      "name": "style",
+      "type": "string",
+      "required": false,
+      "default": "Bold",
+      "max_length": 40
+    },
+    {
+      "name": "size",
+      "type": "number",
+      "required": false,
+      "default": 0.08,
+      "min": 0.01,
+      "max": 0.6,
+      "description": "Fusion Text+ size"
+    },
+    {
+      "name": "color",
+      "type": "color",
+      "required": false,
+      "default": "#FFFFFF"
+    },
+    {
+      "name": "shadow_opacity",
+      "type": "number",
+      "required": false,
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "shadow_softness",
+      "type": "number",
+      "required": false,
+      "default": 4,
+      "min": 0,
+      "max": 40
+    },
+    {
+      "name": "outline",
+      "type": "number",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "description": "outline opacity"
+    },
+    {
+      "name": "outline_width",
+      "type": "number",
+      "required": false,
+      "default": 0.004,
+      "min": 0,
+      "max": 0.05
+    },
+    {
+      "name": "outline_color",
+      "type": "color",
+      "required": false,
+      "default": "#000000"
+    },
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "depth",
+      "type": "number",
+      "required": false,
+      "default": 0.15,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "pos_x",
+      "type": "number",
+      "required": false,
+      "default": 0.0,
+      "min": -2,
+      "max": 2
+    },
+    {
+      "name": "pos_y",
+      "type": "number",
+      "required": false,
+      "default": 0.2,
+      "min": -2,
+      "max": 2
+    },
+    {
+      "name": "pos_y_hi",
+      "type": "number",
+      "required": false,
+      "default": 0.24,
+      "min": -2,
+      "max": 2
+    },
+    {
+      "name": "tilt",
+      "type": "number",
+      "required": false,
+      "default": 6,
+      "min": 0,
+      "max": 30
+    },
+    {
+      "name": "camera_z",
+      "type": "number",
+      "required": false,
+      "default": 3.0,
+      "min": 0.5,
+      "max": 20
+    },
+    {
+      "name": "fov",
+      "type": "number",
+      "required": false,
+      "default": 35,
+      "min": 10,
+      "max": 90
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": true,
+  "route": "clip_comp",
+  "gate": "G14",
+  "fallback": "text_2_5d",
+  "tags": [
+    "3d",
+    "spatial"
+  ]
+}

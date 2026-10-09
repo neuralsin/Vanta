@@ -1,0 +1,67 @@
+{
+  "name": "subject_glow",
+  "version": "1.0.0",
+  "category": "effect",
+  "description": "Soft glow emanating from the masked subject (emphasise practical lights / hero subject).",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "matte",
+      "type": "path",
+      "required": true,
+      "default": null,
+      "description": "first frame of the RGBA matte sequence"
+    },
+    {
+      "name": "radius",
+      "type": "number",
+      "required": false,
+      "default": 18,
+      "min": 1,
+      "max": 120
+    },
+    {
+      "name": "strength",
+      "type": "number",
+      "required": false,
+      "default": 0.7,
+      "min": 0.05,
+      "max": 3
+    }
+  ],
+  "requires_matte": true,
+  "spatial_reason_required": false,
+  "route": "clip_comp",
+  "gate": "G6",
+  "fallback": null,
+  "tags": [
+    "glow",
+    "masking"
+  ]
+}

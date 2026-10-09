@@ -1,0 +1,53 @@
+{
+  "name": "glitch",
+  "version": "1.0.0",
+  "category": "transition",
+  "description": "Digital glitch: short horizontal displacement jitter around the cut (seeded keys).",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "edge",
+      "type": "enum",
+      "required": false,
+      "default": "tail",
+      "choices": [
+        "tail",
+        "head"
+      ]
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": false,
+  "route": "transition_halves",
+  "gate": "G12",
+  "fallback": "cross_dissolve",
+  "tags": [
+    "transition"
+  ]
+}

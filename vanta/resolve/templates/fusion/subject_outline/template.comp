@@ -1,0 +1,108 @@
+Composition {
+	CurrentTime = 0,
+	RenderRange = { 0, {{LAST}} },
+	GlobalRange = { 0, {{LAST}} },
+	CurrentID = 128,
+	HiQ = true,
+	PlaybackUpdateMode = 0,
+	Version = "Fusion Studio 21.1",
+	SavedOutputs = 0,
+	HeldTools = 0,
+	DisabledTools = 0,
+	LockedTools = 0,
+	AudioOffset = 0,
+	AutoRenderRange = true,
+	Prefs = {
+		Comp = {
+			FrameFormat = { Width = {{WIDTH}}, Height = {{HEIGHT}}, AspectX = 1, AspectY = 1 },
+		},
+	},
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			ExtentSet = true,
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				LayerName = Input { Value = "Layer 1", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		Matte1 = Loader {
+			Clips = {
+				Clip {
+					ID = "Clip1",
+					Filename = {{MATTE}},
+					FormatID = "PNGFormat",
+					StartFrame = 0,
+					LengthSetManually = true,
+					TrimIn = 0,
+					TrimOut = {{LAST}},
+					ExtendFirst = 0,
+					ExtendLast = 0,
+					Loop = 0,
+					AspectMode = 0,
+					Depth = 0,
+					TimeCode = 0,
+					GlobalStart = 0,
+					GlobalEnd = {{LAST}}
+				}
+			},
+			Inputs = { ["Clip1.PNGFormat.PostMultiply"] = Input { Value = 1, }, },
+			ViewInfo = OperatorInfo { Pos = { 0, 300 } },
+		},
+		OutlineDilate = ErodeDilate {
+			Inputs = {
+				XAmount = Input { Value = {{WIDTH_PX}}, },
+				Input = Input { SourceOp = "Matte1", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 300, 200 } },
+		},
+		OutlineColor = Background {
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				Width = Input { Value = {{WIDTH}}, },
+				Height = Input { Value = {{HEIGHT}}, },
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = {{COLOR_R}}, },
+				TopLeftGreen = Input { Value = {{COLOR_G}}, },
+				TopLeftBlue = Input { Value = {{COLOR_B}}, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "OutlineDilate", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 450, 200 } },
+		},
+		OutlineSoft = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = {{SOFTNESS}}, },
+				Input = Input { SourceOp = "OutlineColor", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 600, 200 } },
+		},
+		OutlineFade = BezierSpline {
+			SplineColor = { Red = 220, Green = 220, Blue = 220 },
+			NameSet = true,
+			KeyFrames = { [{{IN_M1}}] = { 0, Flags = { Linear = true } }, [{{IN}}] = { 0, Flags = { Linear = true } }, [{{IN_RAMP}}] = { 1, Flags = { Linear = true } }, [{{OUT_RAMP}}] = { 1, Flags = { Linear = true } }, [{{OUT}}] = { 0, Flags = { Linear = true } } }
+		},
+		OutlineUnder = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "OutlineSoft", Source = "Output", },
+				Blend = Input { SourceOp = "OutlineFade", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 750, 0 } },
+		},
+		SubjectTop = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "OutlineUnder", Source = "Output", },
+				Foreground = Input { SourceOp = "MediaIn1", Source = "Output", },
+				EffectMask = Input { SourceOp = "Matte1", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 900, 0 } },
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "SubjectTop", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 1100, 0 } },
+		},
+	},
+}

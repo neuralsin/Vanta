@@ -1,0 +1,73 @@
+{
+  "name": "subject_outline",
+  "version": "1.0.0",
+  "category": "effect",
+  "description": "Coloured outline around the masked subject (cut-out look).",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "matte",
+      "type": "path",
+      "required": true,
+      "default": null,
+      "description": "first frame of the RGBA matte sequence"
+    },
+    {
+      "name": "color",
+      "type": "color",
+      "required": false,
+      "default": "#FFFFFF"
+    },
+    {
+      "name": "width_px",
+      "type": "number",
+      "required": false,
+      "default": 0.006,
+      "min": 0.0005,
+      "max": 0.05
+    },
+    {
+      "name": "softness",
+      "type": "number",
+      "required": false,
+      "default": 1.5,
+      "min": 0,
+      "max": 20
+    }
+  ],
+  "requires_matte": true,
+  "spatial_reason_required": false,
+  "route": "clip_comp",
+  "gate": "G6",
+  "fallback": null,
+  "tags": [
+    "masking",
+    "outline"
+  ]
+}

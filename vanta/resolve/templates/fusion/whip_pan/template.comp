@@ -1,0 +1,76 @@
+Composition {
+	CurrentTime = 0,
+	RenderRange = { 0, {{LAST}} },
+	GlobalRange = { 0, {{LAST}} },
+	CurrentID = 128,
+	HiQ = true,
+	PlaybackUpdateMode = 0,
+	Version = "Fusion Studio 21.1",
+	SavedOutputs = 0,
+	HeldTools = 0,
+	DisabledTools = 0,
+	LockedTools = 0,
+	AudioOffset = 0,
+	AutoRenderRange = true,
+	Prefs = {
+		Comp = {
+			FrameFormat = { Width = {{WIDTH}}, Height = {{HEIGHT}}, AspectX = 1, AspectY = 1 },
+		},
+	},
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			ExtentSet = true,
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				LayerName = Input { Value = "Layer 1", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		WhipPathX = BezierSpline {
+			SplineColor = { Red = 250, Green = 59, Blue = 49 },
+			NameSet = true,
+			KeyFrames = { [{{IN}}] = { {{X_A}}, Flags = { Linear = true } }, [{{OUT}}] = { {{X_B}}, Flags = { Linear = true } } }
+		},
+		WhipPathY = BezierSpline {
+			SplineColor = { Red = 252, Green = 131, Blue = 47 },
+			NameSet = true,
+			KeyFrames = { [{{IN}}] = { 0.5, Flags = { Linear = true } }, [{{OUT}}] = { 0.5, Flags = { Linear = true } } }
+		},
+		WhipPath = XYPath {
+			ShowKeyPoints = false,
+			DrawMode = "ModifyOnly",
+			Inputs = {
+				X = Input { SourceOp = "WhipPathX", Source = "Value", },
+				Y = Input { SourceOp = "WhipPathY", Source = "Value", },
+			},
+		},
+		WhipBlur = BezierSpline {
+			SplineColor = { Red = 220, Green = 220, Blue = 220 },
+			NameSet = true,
+			KeyFrames = { [{{IN}}] = { {{BLUR_A}}, Flags = { Linear = true } }, [{{OUT}}] = { {{BLUR_B}}, Flags = { Linear = true } } }
+		},
+		WhipXf = Transform {
+			Inputs = {
+				Center = Input { SourceOp = "WhipPath", Source = "Value", },
+				Edges = Input { Value = 3, },
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 300, 0 } },
+		},
+		WhipBlurT = DirectionalBlur {
+			Inputs = {
+				Type = Input { Value = 0, },
+				Length = Input { SourceOp = "WhipBlur", Source = "Value", },
+				Angle = Input { Value = 0, },
+				Input = Input { SourceOp = "WhipXf", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 500, 0 } },
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "WhipBlurT", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 1100, 0 } },
+		},
+	},
+}

@@ -1,0 +1,74 @@
+{
+  "name": "caption_clean",
+  "version": "1.0.0",
+  "category": "text",
+  "description": "Clean captions without per-word highlight; RGBA overlay + SRT.",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "font",
+      "type": "font",
+      "required": false,
+      "default": "Arial"
+    },
+    {
+      "name": "color",
+      "type": "color",
+      "required": false,
+      "default": "#FFFFFF"
+    },
+    {
+      "name": "highlight",
+      "type": "color",
+      "required": false,
+      "default": "#FFD23F"
+    },
+    {
+      "name": "size",
+      "type": "number",
+      "required": false,
+      "default": 0.045,
+      "min": 0.015,
+      "max": 0.2,
+      "description": "cap height / frame height"
+    },
+    {
+      "name": "y",
+      "type": "number",
+      "required": false,
+      "default": 0.68,
+      "min": 0.05,
+      "max": 0.95
+    },
+    {
+      "name": "outline",
+      "type": "number",
+      "required": false,
+      "default": 1.0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "backing",
+      "type": "number",
+      "required": false,
+      "default": 0.0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "uppercase",
+      "type": "bool",
+      "required": false,
+      "default": true
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": false,
+  "route": "overlay",
+  "gate": "G3",
+  "fallback": null,
+  "tags": [
+    "captions"
+  ]
+}

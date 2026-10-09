@@ -176,10 +176,10 @@ def run_g1(
         before_retry = adapter.read_state({"scope": "project"}).get("timelines", [])
         try:
             adapter.create_timeline(fixture.timeline_name, snapshot_id=snapshot_id)
-        except ResolveUnavailable:
+        except ResolveUnavailable as refused:
             after_retry = adapter.read_state({"scope": "project"}).get("timelines", [])
             if after_retry != before_retry:
-                raise VerificationFailed("G1 idempotence retry changed the project's timeline list")
+                raise VerificationFailed("G1 idempotence retry changed the project's timeline list") from refused
         else:
             raise VerificationFailed(
                 "G1 idempotence retry created or reused a timeline without explicit verification"
@@ -194,7 +194,7 @@ def run_g1(
                 "idempotence": "duplicate timeline creation rejected without changing timeline list",
             },
         )
-    except Exception as exc:  # noqa: BLE001 - gate evidence must capture vendor and verification failures
+    except Exception as exc:
         outcome = GateOutcome(
             gate="G1",
             status="FAIL",
@@ -210,7 +210,7 @@ def run_g1(
             ):
                 raise VerificationFailed("G1 rollback was not verified")
             outcome.evidence["rollback"] = rollback
-        except Exception as exc:  # noqa: BLE001 - rollback failure must turn a gate candidate into failure
+        except Exception as exc:
             return GateOutcome(
                 gate="G1",
                 status="FAIL",

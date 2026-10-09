@@ -1,0 +1,86 @@
+{
+  "name": "screen_replacement",
+  "version": "1.0.0",
+  "category": "compositing",
+  "description": "Replace a screen/sign with another clip via a corner pin (static corners; tracked corners via planar tracker in Resolve).",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "inset",
+      "type": "path",
+      "required": true,
+      "default": null
+    },
+    {
+      "name": "tl",
+      "type": "point",
+      "required": false,
+      "default": [
+        0.3,
+        0.7
+      ]
+    },
+    {
+      "name": "tr",
+      "type": "point",
+      "required": false,
+      "default": [
+        0.7,
+        0.7
+      ]
+    },
+    {
+      "name": "bl",
+      "type": "point",
+      "required": false,
+      "default": [
+        0.3,
+        0.3
+      ]
+    },
+    {
+      "name": "br",
+      "type": "point",
+      "required": false,
+      "default": [
+        0.7,
+        0.3
+      ]
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": false,
+  "route": "clip_comp",
+  "gate": "G3",
+  "fallback": null,
+  "tags": [
+    "compositing",
+    "tracking"
+  ]
+}

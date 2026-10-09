@@ -1,0 +1,59 @@
+{
+  "name": "speed_blur",
+  "version": "1.0.0",
+  "category": "effect",
+  "description": "Directional motion blur peaking mid-range (smooth fast motion / energy).",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "amount",
+      "type": "number",
+      "required": false,
+      "default": 0.06,
+      "min": 0,
+      "max": 0.5
+    },
+    {
+      "name": "angle",
+      "type": "number",
+      "required": false,
+      "default": 0,
+      "min": -180,
+      "max": 180
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": false,
+  "route": "clip_comp",
+  "gate": "G3",
+  "fallback": null,
+  "tags": [
+    "motion"
+  ]
+}

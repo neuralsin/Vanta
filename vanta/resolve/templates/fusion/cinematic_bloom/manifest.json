@@ -1,0 +1,67 @@
+{
+  "name": "cinematic_bloom",
+  "version": "1.0.0",
+  "category": "effect",
+  "description": "Filmic highlight bloom/halation (purpose: soften practical highlights).",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "threshold",
+      "type": "number",
+      "required": false,
+      "default": 0.6,
+      "min": 0.1,
+      "max": 0.95
+    },
+    {
+      "name": "radius",
+      "type": "number",
+      "required": false,
+      "default": 25,
+      "min": 1,
+      "max": 150
+    },
+    {
+      "name": "strength",
+      "type": "number",
+      "required": false,
+      "default": 0.35,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": false,
+  "route": "clip_comp",
+  "gate": "G3",
+  "fallback": null,
+  "tags": [
+    "glow"
+  ]
+}

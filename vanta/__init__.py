@@ -1,3 +1,3 @@
-"""VANTA local-first editing engine."""
+"""VANTA: local, style-learning supervised co-editor for DaVinci Resolve Studio."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

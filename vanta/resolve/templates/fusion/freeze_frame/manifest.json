@@ -1,0 +1,68 @@
+{
+  "name": "freeze_frame",
+  "version": "1.0.0",
+  "category": "effect",
+  "description": "Freeze on a moment with a short flash accent (hold attention).",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "freeze_at",
+      "type": "int",
+      "required": true,
+      "default": null,
+      "min": 0,
+      "max": 100000
+    },
+    {
+      "name": "freeze_at_p1",
+      "type": "int",
+      "required": true,
+      "default": null,
+      "min": 0,
+      "max": 100000
+    },
+    {
+      "name": "freeze_at_p4",
+      "type": "int",
+      "required": true,
+      "default": null,
+      "min": 0,
+      "max": 100000
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": false,
+  "route": "clip_comp",
+  "gate": "G13",
+  "fallback": null,
+  "tags": [
+    "motion",
+    "time"
+  ]
+}

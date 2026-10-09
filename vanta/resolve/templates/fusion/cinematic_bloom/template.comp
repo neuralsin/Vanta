@@ -1,0 +1,60 @@
+Composition {
+	CurrentTime = 0,
+	RenderRange = { 0, {{LAST}} },
+	GlobalRange = { 0, {{LAST}} },
+	CurrentID = 128,
+	HiQ = true,
+	PlaybackUpdateMode = 0,
+	Version = "Fusion Studio 21.1",
+	SavedOutputs = 0,
+	HeldTools = 0,
+	DisabledTools = 0,
+	LockedTools = 0,
+	AudioOffset = 0,
+	AutoRenderRange = true,
+	Prefs = {
+		Comp = {
+			FrameFormat = { Width = {{WIDTH}}, Height = {{HEIGHT}}, AspectX = 1, AspectY = 1 },
+		},
+	},
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			ExtentSet = true,
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				LayerName = Input { Value = "Layer 1", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		BloomBC = BrightnessContrast {
+			Inputs = {
+				Gain = Input { Value = 1, },
+				Lift = Input { Value = -{{THRESHOLD}}, },
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 300, 200 } },
+		},
+		BloomBlur = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = {{RADIUS}}, },
+				Input = Input { SourceOp = "BloomBC", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 450, 200 } },
+		},
+		BloomOver = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "BloomBlur", Source = "Output", },
+				ApplyMode = Input { Value = FuID { "Screen" }, },
+				Blend = Input { Value = {{STRENGTH}}, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 900, 0 } },
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "BloomOver", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 1100, 0 } },
+		},
+	},
+}

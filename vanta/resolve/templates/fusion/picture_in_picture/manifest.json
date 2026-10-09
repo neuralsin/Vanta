@@ -1,0 +1,66 @@
+{
+  "name": "picture_in_picture",
+  "version": "1.0.0",
+  "category": "compositing",
+  "description": "Second clip as an inset (show context with detail).",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "inset",
+      "type": "path",
+      "required": true,
+      "default": null
+    },
+    {
+      "name": "center",
+      "type": "point",
+      "required": false,
+      "default": [
+        0.72,
+        0.7
+      ]
+    },
+    {
+      "name": "scale",
+      "type": "number",
+      "required": false,
+      "default": 0.33,
+      "min": 0.1,
+      "max": 0.9
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": false,
+  "route": "clip_comp",
+  "gate": "G3",
+  "fallback": null,
+  "tags": [
+    "compositing"
+  ]
+}

@@ -1,0 +1,175 @@
+Composition {
+	CurrentTime = 0,
+	RenderRange = { 0, {{LAST}} },
+	GlobalRange = { 0, {{LAST}} },
+	CurrentID = 128,
+	HiQ = true,
+	PlaybackUpdateMode = 0,
+	Version = "Fusion Studio 21.1",
+	SavedOutputs = 0,
+	HeldTools = 0,
+	DisabledTools = 0,
+	LockedTools = 0,
+	AudioOffset = 0,
+	AutoRenderRange = true,
+	Prefs = {
+		Comp = {
+			FrameFormat = { Width = {{WIDTH}}, Height = {{HEIGHT}}, AspectX = 1, AspectY = 1 },
+		},
+	},
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			ExtentSet = true,
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				LayerName = Input { Value = "Layer 1", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		Text1 = TextPlus {
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				Width = Input { Value = {{WIDTH}}, },
+				Height = Input { Value = {{HEIGHT}}, },
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = {{TEXT}}, },
+				Font = Input { Value = {{FONT}}, },
+				Style = Input { Value = {{STYLE}}, },
+				Size = Input { Value = {{SIZE}}, },
+				VerticalJustificationNew = Input { Value = 3, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				Red1 = Input { Value = {{COLOR_R}}, },
+				Green1 = Input { Value = {{COLOR_G}}, },
+				Blue1 = Input { Value = {{COLOR_B}}, },
+				Alpha1 = Input { Value = {{COLOR_A}}, },
+				Center = Input { Value = { {{CENTER_X}}, {{CENTER_Y}} }, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 200, -200 } },
+		},
+		DriftPathX = BezierSpline {
+			SplineColor = { Red = 250, Green = 59, Blue = 49 },
+			NameSet = true,
+			KeyFrames = { [{{IN}}] = { {{DRIFT_X0}}, Flags = { Linear = true } }, [{{OUT}}] = { {{DRIFT_X1}}, Flags = { Linear = true } } }
+		},
+		DriftPathY = BezierSpline {
+			SplineColor = { Red = 252, Green = 131, Blue = 47 },
+			NameSet = true,
+			KeyFrames = { [{{IN}}] = { 0.5, Flags = { Linear = true } }, [{{OUT}}] = { 0.5, Flags = { Linear = true } } }
+		},
+		DriftPath = XYPath {
+			ShowKeyPoints = false,
+			DrawMode = "ModifyOnly",
+			Inputs = {
+				X = Input { SourceOp = "DriftPathX", Source = "Value", },
+				Y = Input { SourceOp = "DriftPathY", Source = "Value", },
+			},
+		},
+		DriftSize = BezierSpline {
+			SplineColor = { Red = 220, Green = 220, Blue = 220 },
+			NameSet = true,
+			KeyFrames = { [{{IN}}] = { 1, Flags = { Linear = true } }, [{{OUT}}] = { {{DRIFT_SCALE}}, Flags = { Linear = true } } }
+		},
+		DriftXf = Transform {
+			Inputs = {
+				Center = Input { SourceOp = "DriftPath", Source = "Value", },
+				Size = Input { SourceOp = "DriftSize", Source = "Value", },
+				Input = Input { SourceOp = "Text1", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 300, -200 } },
+		},
+		TBase = Background {
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				Width = Input { Value = {{WIDTH}}, },
+				Height = Input { Value = {{HEIGHT}}, },
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, -200 } },
+		},
+		TShadowBC = BrightnessContrast {
+			Inputs = {
+				Gain = Input { Value = 0, },
+				Input = Input { SourceOp = "DriftXf", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 400, -320 } },
+		},
+		TShadowBlur = Blur {
+			Inputs = {
+				XBlurSize = Input { Value = {{SHADOW_SOFTNESS}}, },
+				Input = Input { SourceOp = "TShadowBC", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 500, -320 } },
+		},
+		TShadowXf = Transform {
+			Inputs = {
+				Center = Input { Value = { 0.503, 0.496 }, },
+				Input = Input { SourceOp = "TShadowBlur", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 600, -320 } },
+		},
+		TShadow = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TBase", Source = "Output", },
+				Foreground = Input { SourceOp = "TShadowXf", Source = "Output", },
+				Blend = Input { Value = {{SHADOW_OPACITY}}, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 700, -320 } },
+		},
+		TDilate = ErodeDilate {
+			Inputs = {
+				XAmount = Input { Value = {{OUTLINE_WIDTH}}, },
+				Input = Input { SourceOp = "DriftXf", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 400, -420 } },
+		},
+		TOutlineFill = Background {
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				Width = Input { Value = {{WIDTH}}, },
+				Height = Input { Value = {{HEIGHT}}, },
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = {{OUTLINE_COLOR_R}}, },
+				TopLeftGreen = Input { Value = {{OUTLINE_COLOR_G}}, },
+				TopLeftBlue = Input { Value = {{OUTLINE_COLOR_B}}, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "TDilate", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 500, -420 } },
+		},
+		TOutline = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TShadow", Source = "Output", },
+				Foreground = Input { SourceOp = "TOutlineFill", Source = "Output", },
+				Blend = Input { Value = {{OUTLINE}}, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 700, -420 } },
+		},
+		TStack = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TOutline", Source = "Output", },
+				Foreground = Input { SourceOp = "DriftXf", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 800, -260 } },
+		},
+		TitleFade = BezierSpline {
+			SplineColor = { Red = 220, Green = 220, Blue = 220 },
+			NameSet = true,
+			KeyFrames = { [{{IN_M1}}] = { 0, Flags = { Linear = true } }, [{{IN}}] = { 0, Flags = { Linear = true } }, [{{IN_RAMP}}] = { 1, Flags = { Linear = true } }, [{{OUT_RAMP}}] = { 1, Flags = { Linear = true } }, [{{OUT}}] = { 0, Flags = { Linear = true } } }
+		},
+		TitleOver = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "TStack", Source = "Output", },
+				Blend = Input { SourceOp = "TitleFade", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 900, 0 } },
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "TitleOver", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 1100, 0 } },
+		},
+	},
+}

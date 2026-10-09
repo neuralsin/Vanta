@@ -1,0 +1,85 @@
+{
+  "name": "whip_pan",
+  "version": "1.0.0",
+  "category": "transition",
+  "description": "Whip pan: horizontal directional blur and offset across the cut.",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    {
+      "name": "edge",
+      "type": "enum",
+      "required": false,
+      "default": "tail",
+      "choices": [
+        "tail",
+        "head"
+      ]
+    },
+    {
+      "name": "x_a",
+      "type": "number",
+      "required": false,
+      "default": 0.5,
+      "min": -1,
+      "max": 2
+    },
+    {
+      "name": "x_b",
+      "type": "number",
+      "required": false,
+      "default": 0.2,
+      "min": -1,
+      "max": 2
+    },
+    {
+      "name": "blur_a",
+      "type": "number",
+      "required": false,
+      "default": 0.0,
+      "min": 0,
+      "max": 0.6
+    },
+    {
+      "name": "blur_b",
+      "type": "number",
+      "required": false,
+      "default": 0.25,
+      "min": 0,
+      "max": 0.6
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": false,
+  "route": "transition_halves",
+  "gate": "G12",
+  "fallback": "cross_dissolve",
+  "tags": [
+    "transition"
+  ]
+}

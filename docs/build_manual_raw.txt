@@ -1,0 +1,1491 @@
+Resolve Autopilot — Final Build Manual (v2.0)
+
+A local, style-learning, reasoning editor that drives DaVinci Resolve in front of your eyes · 9 Oct 2026 · supersedes v1.0 and the ChatGPT draft
+
+How this was produced: I read the ChatGPT draft line by line, re-verified its claims against current sources (Resolve 21.1 and 21.1.1 release coverage, current scripting guides, the Resolve MCP documentation), and decided for each proposal whether to adopt, adapt, correct or reject it. Section 0 is that decision log, so you can see the reasoning rather than trust it.
+
+0. Decision log
+
+0.1 New facts that changed the design (verified today)
+
+Fact
+
+Effect on the build
+
+Resolve 21.1 (8 Sep 2026) adds a native MCP server in Studio and about 20 scripting calls, including add transitions, fades, speed changes, clip transcriptions with speaker and timing data, multicam create/flatten, auto-align, audio normalise and render-preset management
+
+v1's “transitions are an API gap” is now out of date. Gates G12/G13 test the new calls before we rely on them
+
+Python scripting is Studio-only from 21.1 (the free edition lost it)
+
+Studio is mandatory. v1's free-edition bridge is removed
+
+Resolve 21.1.1 (early Oct 2026) adds async APIs (Quick Export, transcription, scene-cut detection, Smart Reframe, subtitles) and an option on ApplyGradeFromDRX to apply to all node layers
+
+Long jobs run async with polling, so the executor never blocks on them
+
+The colour API is unchanged in substance: SetCDL writes but cannot read back; SetLUT/GetLUT per node; DRX apply/export; no node creation, wheels, curves, qualifiers, windows or Color Warper (maintainers' colour guide and a July 2026 scripting guide; both predate 21.1, so re-test)
+
+ChatGPT's “construct editable colour-node trees” is only achievable through DRX templates / DRX authoring. Verification is by exported LUT or still, never by reading CDL back
+
+Fusion in 21.1 can import externally tracked results into the Camera Tracker, and adds Krokodove 3D tools and OpenPBR shaders
+
+The 3D hover-text route improves: solve the camera outside, import it (G14)
+
+Studio AI tools want at least 16 GB GPU memory on Windows/Linux; background analysis wants 32 GB RAM and 12 GB VRAM
+
+Resolve and your local models compete for VRAM. ChatGPT's “Resolve reserves 6 GB” is unrealistic (Section 5)
+
+21.1 projects will not open in 20.3.2
+
+Pin the version, back up the library before upgrading
+
+Studio is a one-time licence
+
+Cost is one-off, not recurring
+
+0.2 Verdict on each ChatGPT proposal
+
+Proposal
+
+Verdict
+
+What we do
+
+Target Resolve Studio 21.1+
+
+Adopt
+
+Verified. Run 21.1 as baseline; trial 21.1.1 on a branch
+
+Narrow facade over the MCP (about a dozen high-level tools)
+
+Adopt
+
+The model never sees hundreds of low-level tools
+
+Specialist model stack (Qwen3-VL, DINOv2, SAM 3.1, Whisper, CLAP, PySceneDetect, pyannote)
+
+Adopt, trimmed
+
+pyannote only when multi-speaker; Resolve 21.1 already returns speaker data
+
+Style capsules with observed vs inferred, evidence and confidence
+
+Adopt
+
+Core of the Style Brain
+
+Dimension-specific reference weighting
+
+Adopt
+
+Merged with v1's profile isolation: weights are the only sanctioned way to borrow across references
+
+Negative preferences and contextual exceptions
+
+Adopt
+
+v1 lacked these; they now have first-class schema
+
+Edit Spec, Edit Decision Graph, conversational Patches
+
+Adopt
+
+Enables “change only the grade”
+
+Confidence gates at 0.90 / 0.70 / 0.50
+
+Adapt
+
+Starting values. Calibrate against your real accept/reject history before trusting them
+
+Template-only Fusion; never run model-written Fusion code
+
+Adopt
+
+Security rule (Section 16)
+
+Plugin, font, LUT and DCTL registry scan
+
+Adopt
+
+The model cannot hallucinate effects you do not own
+
+AUTO / ASSISTED / MANUAL modes
+
+Adopt
+
+Default ASSISTED, combined with the new WATCH / STEP run modes (Section 4)
+
+Qwen thinking variant for everything
+
+Adapt
+
+Use thinking for critique; use schema-constrained non-thinking output for plans. Test both; do not assume
+
+“easy-edit supports style-extract / style-apply / style-learn / agent / MCP”
+
+Correct
+
+Those commands belong to editstyle (CutAI). easy-edit (EditDNA) is analyse → template → EDL → Resolve
+
+Optional MusicGen generation
+
+Defer
+
+Check the weights' licence before any commercial use (it has been reported as non-commercial)
+
+Tauri desktop app early
+
+Defer
+
+Local web UI first; wrap later
+
+Do not fine-tune Qwen first
+
+Agree
+
+Memory + retrieval + rules first
+
+GPU scheduler and job queue
+
+Adopt
+
+Single GPU lease
+
+Five-step acceptance ladder
+
+Adopt
+
+Merged into the roadmap (Section 20)
+
+1. Verdict
+
+Buildable, yes — as a supervised co-editor, not an unsupervised one. The result is a real, editable Resolve project (timeline, node grades, Fusion comps, markers, versions), never a flattened MP4, and you can watch it work (Section 4). Three limits stay true: the API cannot create colour nodes or wheels (so grades go through templates), taste calls such as best take remain yours, and nothing here can promise flawless output. The promise is process quality: no silent failures, nothing irreversible, every decision explained and every run replayable.
+
+2. Platform truth table — what Resolve can be told to do
+
+Area
+
+Documented as working
+
+Not available
+
+Our route
+
+Timeline and media
+
+Create timelines, append clips with source in/out and trackIndex, markers, flags, clip colours, compound clips, duplicate timeline
+
+Insert-title/generator calls ignore track targeting (land on the selector's target)
+
+Build structure from FCPXML/OTIO import or AppendToTimeline; titles via Fusion comps
+
+Transitions, fades, speed
+
+21.1: add transitions, set fades, set speed changes (new)
+
+Speed ramp control unconfirmed
+
+VERIFY G12, G13; fallback FCPXML or pre-rendered ramp
+
+Colour
+
+SetCDL (write-only), SetLUT/GetLUT, ApplyGradeFromDRX, ExportLUT, colour groups, versions, gallery stills
+
+New nodes, wheels, curves, qualifiers, windows, Color Warper
+
+Node-template DRX + generated LUT/CDL; DRX authoring via MCP advanced server
+
+Fusion
+
+Add/import/export comps per clip, load by name, insert Fusion titles/generators
+
+Reliable arbitrary-graph building from a model
+
+Template comps with token substitution
+
+Magic Mask
+
+CreateMagicMask(mode); needs Studio + Neural Engine + Color page
+
+Quality tuning
+
+SAM 3.1 mattes primary; Magic Mask as fallback
+
+Transcription
+
+Media-pool transcription incl. speaker and timing (21.1), async (21.1.1)
+
+—
+
+Whisper for word-level control; Resolve-native as cross-check
+
+Render
+
+Presets, queue, status polling, quick export (async in 21.1.1)
+
+—
+
+Proxy render for QC, final render after approval
+
+Page / playhead
+
+OpenPage
+
+Playhead set returned False when playback inactive in MCP tests; no clip-selection API
+
+Follow-along via pages + markers (Section 4)
+
+UI panels
+
+Scripts launched from Workspace ▸ Scripts can open their own windows
+
+Moving the mouse / clicking UI
+
+Not used: API-driven only
+
+3. Architecture v2
+
+ ┌───────────────────────── YOU ────────────────────────────────┐ │ Brief · controls · chat patches · approvals · corrections · MISSION CONTROL │ └───────────────────────────────┬──────────────────────────────────────┘                                 ▼ REFERENCE REELS ─▶ PERCEPTION ─▶ STYLE CAPSULES ─▶ STYLE BRAIN                                      (observed vs inferred)  (profiles, weights,                                                               principles, rules, NEW FOOTAGE ──▶ FOOTAGE KNOWLEDGE GRAPH ◀── retrieval ── negatives, exceptions)                        │                        ▼               PLANNER (VLM = director) ─▶ SOLVERS (cut · grade · text · mask · music)                        │                        ▼               EDIT DECISION GRAPH (source of truth, versioned)                        │              VALIDATOR → POLICY ENGINE → CONFIDENCE GATE                        │                        ▼   COMPILERS: FCPXML/OTIO · Fusion .comp · .cube · CDL · DRX · markers                        │                        ▼   RESOLVE ADAPTER ─▶ (MCP / scripting API) ─▶ DAVINCI RESOLVE STUDIO        │  every call emits an EVENT                    │        ▼                                              ▼   MISSION CONTROL (live)                  markers · clip colours · versions                        │                        ▼          PROXY RENDER → CRITIC → PATCH → QC → FINAL RENDER                        │                        ▼   YOUR CORRECTIONS → PREFERENCE MEMORY → STYLE BRAIN UPDATE (reviewed)
+
+Twelve principles
+
+Learn principles, not pixels. Reference → observations → technique hypotheses → conditions → preferences → rules → execution strategy.
+
+Specialists, not one giant model. VLM = creative director; solver = editor; Resolve = workstation.
+
+Code computes numbers; the model chooses strategies and explains them.
+
+The EDG is the source of truth. Resolve is the executor and renderer.
+
+No raw model writes to Resolve. Plan → validator → policy → adapter.
+
+Write → read back → verify. Never trust an unverified Resolve write.
+
+Never destroy originals; work on new timelines and versions.
+
+Templates only for Fusion.
+
+Everything visible: every executor step emits an event and a breadcrumb inside Resolve.
+
+Cache and version everything (model, schema, solver, template, Resolve versions).
+
+Patch, don't rebuild.
+
+Local-first. No cloud calls unless you switch them on.
+
+Precedence ladder: 1 hard safety constraints → 2 your current instruction → 3 project Brief → 4 recent confirmed corrections → 5 high-confidence conditional rules → 6 universal principles → 7 low-confidence observations.
+
+4. Live visibility — how you watch it work
+
+You asked to keep seeing exactly what it's doing in Resolve, live. This is a first-class subsystem, not an afterthought.
+
+4.1 Four windows into every run
+
+Window
+
+What you see
+
+Where
+
+A. Resolve itself (follow-along)
+
+The timeline growing, grades appearing, Fusion comps being added, because the executor switches Resolve to the relevant page before each action
+
+Resolve main window
+
+B. Breadcrumbs in the project
+
+A marker for every decision (colour = status, note = because + rule IDs + confidence), clip colours for state, one timeline version per stage you can flip between
+
+Inside the Resolve project (permanent audit trail)
+
+C. Mission Control
+
+Live event log, plan checklist, before/after thumbnails, GPU/VRAM, confidence, Pause / Step / Stop / Undo buttons
+
+Second monitor or side window (local web app)
+
+D. Flight recorder
+
+A screen recording of Resolve plus the event timeline, replayable later
+
+Disk
+
+4.2 Run modes
+
+Mode
+
+Behaviour
+
+WATCH
+
+Runs on its own but slowly: switches pages, waits a configurable delay (default 0.7 s) between steps so you can follow
+
+STEP
+
+Pauses before every step and shows what it is about to do and why; you press Next, Skip or Edit
+
+TURBO
+
+No delay, no page switching; breadcrumbs and events still written
+
+These combine with autonomy modes AUTO / ASSISTED / MANUAL (ASSISTED asks before high-impact grades, complex masks, 3D and final render; MANUAL never writes without approval). Default: ASSISTED + WATCH.
+
+4.3 Follow-along mechanics
+
+Order of work is chosen so you always watch something meaningful: assembly on the Edit page, then each shot's grade on the Color page, then Fusion comps on the Fusion page, then Deliver for renders. Resolve's OpenPage is documented; whether the viewport repaints during long calls is tested in G11.
+
+4.4 Event schema and the step loop
+
+# one event per step, stored in SQLite (WAL) and pushed over WebSocketevent_id: evt_000412run_id: night_ride_v3_r07ts: 2026-10-09T12:04:11Zstage: gradeaction: set_cdltarget: {timeline: AP_night_ride_v3, clip: shot_07, node: 1}page_hint: colorbecause: [R-031, P-014, brief.grade_intensity=medium]confidence: 0.87status: verified          # planned | running | verified | failed | rolled_backthumbs: {before: thumbs/412_b.jpg, after: thumbs/412_a.jpg}undo_token: undo_000412
+
+def do_step(run, step, resolve, tl):    emit(run, status='planned', action=step.action, target=step.target, because=step.because)    run.gate()                               # blocks on PAUSE, raises on STOP (checked between calls)    if run.mode in ('WATCH', 'STEP'):        resolve.OpenPage(step.page_hint)     # follow-along: edit | color | fusion | deliver        if run.mode == 'STEP':            run.wait_for_approval(step)        time.sleep(run.watch_delay_s)    emit(run, status='running', action=step.action)    ok = step.apply(resolve) and step.verify(resolve)       # write, read back, compare    tl.AddMarker(step.frame, 'Green' if ok else 'Red', 'AP:' + step.short_name,                 'because ' + ', '.join(step.because) + ' | conf ' + str(step.conf),                 1, 'ap:' + step.id)                         # breadcrumb inside Resolve    emit(run, status='verified' if ok else 'failed', action=step.action)
+
+Marker colour code (fixed, shown in Mission Control legend): Blue = decision, Green = verified, Yellow = low confidence — look at this, Red = failed or blocked, Purple = your override honoured, Cyan = AI note for you. Clip colours mirror shot state (orange pending, green verified, red needs review).
+
+4.5 Mission Control layout
+
+┌ MISSION CONTROL ─ run night_ride_v3 ─ WATCH ─ [Pause] [Step] [Stop] [Undo last] ┐│ STAGE  Grade ▸ shot 7/12     CONF 0.87     GPU 71%   VRAM 19.2 / 24 GB        │├──────────────────────┬────────────────────────────────────────────────┤│ PLAN (EDG)           │ LIVE LOG                                              ││ ✓ assembly          │ 12:04:11 SetCDL   shot_07 node1  R-031,P-014     ✓     ││ ✓ captions          │ 12:04:12 SetLUT   shot_07 node2  R031_s07.cube  ✓     ││ ▶ grade 7/12        │ 12:04:14 Matte    shot_07        SAM3 conf 0.94  …     ││ · fusion text       ├────────────────────────────────────────────────────────┤│ · music            │ BEFORE | AFTER  (frame from the shot)                 ││ ⚠ 2 low-conf masks  │ [Accept]  [Revert]  [Why?]  [Change this…]            │└──────────────────────┴────────────────────────────────────────────────┘
+
+Why? opens the decision's rule IDs, exemplar shots and the measured stats behind it.
+
+Change this… creates a Patch (Section 10) scoped to that step and records your correction for learning.
+
+Before/after thumbnails come from frames the system renders itself, not from the playhead, because playhead control is unreliable in the API.
+
+4.6 Optional in-Resolve HUD
+
+Scripts launched from Workspace ▸ Scripts can open a small window inside Resolve (Fusion's UI Manager). A thin script polls Mission Control's local endpoint and shows the current step plus a Stop button, so you do not need a second monitor. It must stay a thin client (no model code inside Resolve's process). VERIFY in G11; if it fails, the second-window Mission Control is the fallback.
+
+4.7 Honest limits of “live”
+
+API-driven, not mouse-driven. You will see results appear, not a cursor clicking. That is deliberate: it is what makes runs deterministic and verifiable. GUI-automation is not used.
+
+Brain-phase work happens outside Resolve (analysis, SAM, planning). During it Resolve is idle and you watch Mission Control.
+
+Resolve may not repaint during a long call. Page switching usually forces a refresh; G11 measures it.
+
+Pause is honoured between calls, not mid-call. A running render stops only through StopRendering.
+
+Clip selection and playhead are poorly controllable, so we never depend on them.
+
+WATCH mode is slower on purpose; TURBO exists for when you trust a stage.
+
+Gate G11 (live-follow test): run 20 timed steps across Edit, Color and Fusion pages while screen-recording. Pass: at least 18 of 20 results are visibly on screen within 1 second without manual refresh. Fallback: STEP mode plus markers, clip colours and Mission Control thumbnails.
+
+Flight recorder (optional): ffmpeg -f gdigrab -framerate 15 -i title='DaVinci Resolve' -c:v libx264 -crf 28 run_r07.mp4 on Windows, started with the run and indexed by event timestamps.
+
+5. Hardware, models, scheduler
+
+Tier
+
+Hardware
+
+What runs
+
+Notes
+
+A — prototype
+
+12–16 GB VRAM, 32 GB RAM
+
+Qwen3-VL 8B, SAM at modest resolution, Whisper
+
+Avoid Resolve's Neural Engine tools while models are loaded
+
+B — recommended
+
+24 GB VRAM, 64 GB RAM, 2 TB NVMe
+
+30–32B-class VLM at Q4, SAM 3.1, Whisper large-v3-turbo
+
+Strict scheduler: never run Resolve AI tools and the VLM together
+
+C — comfortable
+
+Two GPUs (one for Resolve/display, one for models) or 48 GB+ single
+
+Everything concurrently
+
+Best live experience: Resolve stays responsive while models run
+
+Model roles
+
+Role
+
+Pick
+
+Notes
+
+Visual reasoner
+
+Qwen3-VL via Ollama (8B on small tier; 30B/32B on 24 GB)
+
+Confirm exact tags with ollama list/pull; sizes quoted by third parties are weights only, so budget extra VRAM for image tokens and context
+
+Visual memory
+
+DINOv2 embeddings
+
+Shot similarity, clustering, retrieval
+
+Text–image semantics
+
+open_clip / SigLIP-class
+
+Matching intent text to frames
+
+Masks and tracking
+
+SAM 3.1 (gated; SAM License)
+
+Text and point prompts, video tracking
+
+Speech
+
+Whisper large-v3-turbo + alignment; Resolve-native transcription as cross-check
+
+pyannote only for multi-speaker
+
+Audio semantics
+
+CLAP
+
+Music retrieval
+
+Shots
+
+PySceneDetect (and Resolve's async scene-cut detection as cross-check)
+
+Deterministic
+
+Motion, OCR
+
+OpenCV optical flow; EasyOCR/PaddleOCR
+
+Colour
+
+colour-science, numpy, OpenCV
+
+Statistics and LUT writing
+
+Optional
+
+VideoColorGrading as LUT proposer
+
+Scored by our loss; never the authority
+
+Scheduler rules: one heavy model resident at a time; unload after each stage (keep_alive 0); OLLAMA_NUM_PARALLEL=1; pause AI inference while Resolve renders or runs Neural Engine tools; reserve headroom; queue with explicit states QUEUED → RUNNING → SUCCEEDED / FAILED / RETRYABLE / CANCELLED, errors stored in the database.
+
+6. Repository and data contracts
+
+personal-editor-ai/├─ core/        schemas/ edit_spec/ policies/ events/├─ analysis/    video shots vision audio ocr color motion segmentation├─ style/       capsules/ brain/ retrieval/ induction/ calibration/├─ reasoning/   planner/ color_reasoner/ effect_reasoner/ music_reasoner/ critic/ repair/├─ solvers/     cut/ grade/ text/ mask/ music/├─ compile/     to_fcpxml to_otio to_comp to_cube to_cdl to_drx├─ resolve/     adapter/ executor/ verify/ rollback/ registry/ templates/{fusion,drx,luts}├─ live/        event_bus/ mission_control/ hud_script/ recorder/├─ learning/    feedback/ preferences/ evaluation/├─ storage/     sqlite/ vectors/├─ workers/ · ui/ · tests/{unit,golden,resolve,fixtures} · configs/ · vendor/└─ kb/          (human-readable, git-versioned style knowledge)
+
+Edit Spec (UI → AI contract):
+
+goal: cinematic motorcycle reelplatform: instagram_reelduration_s: 30aspect: '9:16'fps: 30mode: {autonomy: ASSISTED, run: WATCH}sliders: {pacing: 0.78, beat_sync: 0.85, color_intensity: 0.6, skin_priority: 0.95,          masking: 0.7, three_d: 0.35, typography_density: 0.4, music_priority: 0.6}references:                      # dimension-specific weights, never blind blending  reel_023: {color: 1.0}  reel_031: {typography: 1.0}  reel_011: {rhythm: 0.8, fusion: 0.5}locks: {text: ['NIGHT RIDE', 'NO BRAKES']}never: ['text over faces', 'zoom transitions on static shots']
+
+Style capsule observation (observed vs inferred is mandatory):
+
+reference: reel_012technique: text_behind_subjectwindow_s: [4.2, 5.8]observed: text occluded by rider, reappears after occlusioninferred: {method: subject_matte, alternative: precomposited_render, confidence: 0.91}evidence: [frames/reel_012_t4.2.jpg, frames/reel_012_t5.0.jpg]purpose: spatial integration of title with sceneconditions: {subject: person_or_vehicle, camera: stable, negative_space: present}implementation: {template: text_behind_subject, fallback: text_2_5d}
+
+Style rule (positive, negative and exceptions in one schema):
+
+id: color.subject_environment_separationdimension: colorprofile: night-moto-cinematicwhen: {subject_type: person, lighting: mixed}prefer: {subject: warm, environment: cool, saturation: moderate}avoid: [global_teal_orange, blue_skin]exceptions:  - when: {music_energy: '>0.85', cut_rate: '>0.75'}    allow: [kinetic_typography]confidence: 0.91support: {shots: 31, reels: 12}contradictions: 1last_confirmed: 2026-10-01
+
+7. Phase 0 — Feasibility gates (run before building the brain)
+
+Every VERIFY in this manual is a gate: a small script, a pass criterion, a fallback. Results go into capabilities.yaml; the executor refuses to call anything whose gate is not pass.
+
+Gate
+
+Test
+
+Pass
+
+Fallback
+
+G1 Build
+
+Import 5 clips; create timeline; trim by source frames; use trackIndex; add markers
+
+Frame numbers exact; re-run creates no duplicates
+
+FCPXML/OTIO import
+
+G2 Interchange
+
+FCPXML with cuts and cross-dissolve; ImportTimelineFromFile
+
+Durations exact, no relink dialogs
+
+Hard cuts + Fusion motion
+
+G3 Fusion text
+
+Hand-build a Text+ comp, export it as a template, substitute tokens, ImportFusionComp, render a frame
+
+OCR on the render returns the exact string; position within 2 px
+
+Pre-rendered overlay clip
+
+G3b Text behind subject
+
+Add a subject matte layer over the text
+
+Halo under 1 px; text visibly occluded
+
+Pre-composite outside Resolve
+
+G4 Grade primitives
+
+Apply an 8-node DRX template; SetCDL node 1 (NodeIndex as a string); SetLUT node 4; export the clip's LUT with ExportLUT and compare it to the intended transform
+
+Mean colour error under 1 ΔE on a test grid
+
+LUT-only grading
+
+G5 Subject separation
+
+External-matte node (or authored DRX window) per shot
+
+Subject lifts, background does not, edge clean
+
+Global grade, flagged for you
+
+G6 SAM mattes
+
+Matte sequences → AddClipMattesToMediaPool; a node or comp consumes them
+
+Frame-aligned over a 10 s clip
+
+Burn into a pre-composited clip
+
+G8 Text-based edit
+
+Whisper words + Resolve-native transcription; delete words; rebuild from ranges
+
+No clipped phonemes; A/V sync intact
+
+Resolve's transcription panel
+
+G9 Benchmarks
+
+Time and peak VRAM per stage on 3 sample reels
+
+Within your budgets (Section 19)
+
+Smaller models
+
+G10 Drift guard
+
+Record Resolve version + gates
+
+Executor refuses untested versions
+
+—
+
+G11 Live-follow
+
+See Section 4.7
+
+18 of 20 steps visible within 1 s
+
+STEP mode + breadcrumbs
+
+G12 Transitions API
+
+Call the new 21.1 add-transition function on overlapping clips (dissolve, dip)
+
+Transition appears with the exact duration
+
+FCPXML dissolves; Fusion comps for stylised ones
+
+G13 Speed API
+
+Constant speed change; then a ramp
+
+Exact speed; ramp shape matches request
+
+FCPXML time map or pre-rendered ramp
+
+G14 3D hover
+
+Solve camera outside (OpenCV/SfM), import into Fusion Camera Tracker, drive Camera3D
+
+No visible slip over 3 s of handheld
+
+2.5D fake with parallax
+
+G15 Registry scan
+
+Enumerate installed effects, titles, macros, fonts, LUTs, DCTLs
+
+plugin_registry.json complete
+
+Manual list
+
+G16 Failure injection
+
+Offline media, locked track, modal dialog, Resolve restart, MCP restart, render failure
+
+Each yields a clean error, rollback and a Mission Control alert
+
+Fix before moving on
+
+# capabilities.yaml (written by the gate runner, read by the executor)resolve_version: '21.1'gates: {G1: pass, G2: pass, G3: pass, G3b: pass, G4: pass, G5: partial, G6: pass,        G11: pass, G12: pass, G13: partial, G14: fail}paths:  structure: appendtotimeline_plus_fcpxml  transitions: api_21_1  grade_primary: cdl_plus_lut  grade_secondary: drx_template_external_matte  speed_ramp: prerender  text_3d: fake_25d
+
+8. Perception and style capsules
+
+8.1 Reference ingestion chain
+
+ffprobe → normalise (1080×1920, constant fps, range check) → PySceneDetect shots → adaptive frame sampling → OCR → audio analysis → motion → DINOv2 embeddings → VLM analysis → effect hypotheses → layer reconstruction → capsule. Analysis runs on a 720p proxy; originals are never touched. Every expensive result is cached under clip hash + analysis version + model version.
+
+Adaptive sampling: 1–2 frames/s on ordinary shots; 5–10 frames/s around events (cuts, text appearance, fast motion, mask boundaries, transitions, zooms, speed ramps, music drops).
+
+8.2 Layer reconstruction
+
+Each shot becomes a layer stack, so the system learns how the image is built, not what it looks like:
+
+BASE VIDEO ├─ grade (shadow/highlight tint, black point, rolloff) ├─ subject isolation (matte present? soft or hard?) ├─ typography (class, weight, position, animation) ├─ motion graphics / 3D ├─ effects (glow, grain, shake, aberration, vignette) └─ overlays
+
+Effect classifier vocabulary: hard cut, dissolve, whip, zoom transition, speed ramp, freeze frame, motion blur, mask reveal, subject cutout, text behind subject, tracked text, screen replacement, 3D text, 3D camera move, glow, bloom, chromatic aberration, grain, shake, parallax, particles, vignette, split screen, picture-in-picture. The VLM proposes the meaning; deterministic CV confirms what it can.
+
+8.3 Text analysis
+
+Extract string, timing, box, size, weight, tracking, fill, outline, shadow, position and animation. Do not identify the exact font. Record a font class (for example condensed heavy sans) and map it to the nearest fonts in your installed-font registry.
+
+8.4 Observed vs inferred
+
+A finished reel hides its node graph and Fusion graph. Every capsule entry therefore separates observed behaviour (text vanishes behind the rider) from inferred implementation (subject matte likely; pre-composite is the alternative), with evidence frames and a confidence. If the method cannot be known, the capsule says so.
+
+8.5 Evidence-based confidence
+
+Never accept a model's self-reported confidence. Compute it from: cross-model agreement, temporal consistency across frames, deterministic CV confirmation (OCR confirms text, SAM confirms occluder), reference support count, your history with similar decisions, and implementation certainty.
+
+8.6 Compression caveats and the calibration set
+
+Platform re-encoding destroys grain and shifts chroma: use robust percentiles on mid-tones, treat saturation as relative, never trust one frame. Calibration set (once): apply 10 known looks to your own footage, re-encode reel-style, and confirm the estimators recover them. Fix perception before building on it.
+
+8.7 Reference prompt skeleton
+
+Analyze this video as a professional editor. Do not describe it generally.For each technique give: timestamps, observable evidence, observed vs inferredimplementation, purpose (what visual problem it solves), conditions under which itwould work, and confidence. Do not assume the treatment fits unrelated footage.Return JSON matching the supplied schema and nothing else.
+
+9. The Style Brain
+
+9.1 Storage
+
+SQLite is authoritative (reference, frame, scene, shot, observation, technique, style_rule, exception, preference, correction, project, edit_plan, edit_action, qc_result); a vector index (FAISS or LanceDB) handles retrieval. Every rule stores provenance: source references, support count, contradiction count, confidence, created, last used, last confirmed.
+
+9.2 Dimensions, profiles and reference weighting
+
+Taste is stored per dimension: rhythm, colour, typography, composition, motion, masking, Fusion, audio. Two mechanisms keep genres from blending into mush:
+
+Profiles isolate coherent modes (night-moto-cinematic, clean-daylight-moto, indoor-portrait). Rules are learned inside a profile and never averaged across profiles.
+
+Dimension-specific reference weights are the only sanctioned way to borrow across references: colour from Reel A, typography from Reel B, rhythm from Reel C. Weights live in the Edit Spec (Section 6).
+
+9.3 Universal principles, conditional rules, negatives, exceptions
+
+Kind
+
+Meaning
+
+Example
+
+Universal principle
+
+Holds regardless of subject
+
+Restrained typography; deliberate subject/environment colour separation
+
+Conditional rule
+
+WHEN context THEN treatment
+
+WHEN night + isolated subject + cyan environment THEN cool shadows, warm highlights, crushed blacks, matte lift
+
+Negative preference
+
+Things you reject
+
+Blue skin; zoom transitions on static shots; full-screen text
+
+Exception
+
+Context that overrides a general rule
+
+Kinetic typography allowed when music energy and cut rate are both high
+
+Induction (conditional rules): build per-shot look vectors and descriptor vectors; search condition splits; accept a rule only with support of at least 8 shots across at least 3 reels, a meaningful effect size, and a gain over the universal baseline under leave-one-reel-out validation. The VLM names and explains the rule and lists counter-examples. You approve before it enters the KB.
+
+Sample sizes (rules of thumb, confirm with your own validation curve): about 15–25 reels per profile for stable universal principles; about 40+ before rich conditionals appear; beyond roughly 100 per profile, variety of situations beats volume.
+
+9.4 Effects are tools, not fetishes
+
+Store every effect as purpose + conditions + implementation + fallback:
+
+effect: title_3dpurpose: spatial emphasisconditions: [strong_perspective, controlled_camera, negative_space]implementation: {template: text3d_hover, nodes: [Text3D, Camera3D, Merge3D, Renderer3D]}fallback: text_2_5d_with_planar_track
+
+Before applying any effect the planner must answer what problem does this solve? Glow needs a reason (emphasise practical lights), 3D text needs a spatial reason, and “the user once liked it” is not one.
+
+9.5 Retrieval at plan time
+
+For each target shot: compute descriptors; code evaluates which rule conditions are true; retrieve matching rules per dimension plus nearest exemplars by embedding; assemble a contextual style package with provenance. The planner retrieves rules, not “the closest Reel.”
+
+9.6 Style Explorer and Reference Inspector (UI)
+
+Browse My Style by dimension (preferred / avoid / references / confidence), and open any Reel to see each technique with timestamps, evidence and whether it was observed or inferred. You can see, correct and delete what the AI believes.
+
+10. Planner, Edit Decision Graph, patches, modes
+
+Reasoning loop for every decision: Observe → Classify → Compare → Choose → Implement → Verify. Example: observe night shot, warm skin, cool environment → compare reference separates warm/cool → choose preserve the relationship, not the absolute hue → implement cooler ambient shadows, controlled saturation → verify skin neutral, subject dominant.
+
+Passes: (1) assembly: story, shot choice, pacing, music, basic captions, framing; (2) polish: colour, masks, Fusion, typography, SFX, micro-timing; (3) finishing: QC. Complex jobs run all three.
+
+Division of labour: LLM = director (intent and meaning); solver = editor (timing, repetition limits, beat offsets, invariants); Resolve = workstation.
+
+Read before writing. Before any change the adapter calls get_project_state, get_timeline_state, get_clip_state, get_color_state, get_fusion_state, get_render_state, so the plan reflects the project as it is now, not as remembered.
+
+Patch schema (every chat instruction becomes one):
+
+- op: replace  target: timeline.shot_04  field: source_clip  value: clip_019- op: modify  target: grade.shot_09  field: contrast  delta: -0.12- op: remove  target: layers[type=text3d]
+
+Patches regenerate only the affected stage, so “make the grade 15% less aggressive” never touches the cut.
+
+Confidence gates (starting values — calibrate against your history):
+
+Confidence
+
+Behaviour
+
+above 0.90
+
+Execute; log
+
+0.70–0.90
+
+Execute; show a note in Mission Control and a Yellow marker
+
+0.50–0.70
+
+Preview first; wait for approval
+
+below 0.50
+
+Ask, or use the safe fallback
+
+After 50–100 recorded decisions, plot predicted confidence against your actual acceptance and adjust the thresholds so “0.9” really means about 90% accepted.
+
+11. Grade engine
+
+11.1 Colour management first
+
+Set the project colour science (DaVinci YRGB Color Managed or ACES), assign each clip's input space from camera metadata, fix the output space, and record it in the EDG so no transform is applied twice. Test one export on a phone and set the output gamma convention from what you see.
+
+11.2 Eight-node template (created once by hand, saved as DRX)
+
+Node
+
+Label
+
+Purpose
+
+Filled by
+
+1
+
+TECH
+
+Input/technical
+
+SetCDL (per-shot exposure and white balance)
+
+2
+
+BALANCE
+
+Primary balance
+
+Template + CDL
+
+3
+
+TONE
+
+Contrast and tonal shape
+
+Template (LUT-driven where needed)
+
+4
+
+LOOK
+
+Creative look
+
+SetLUT (generated .cube)
+
+5
+
+SEP
+
+Subject separation (external matte)
+
+SAM matte attached to clip
+
+6
+
+BG
+
+Background treatment
+
+Template (inverse of SEP)
+
+7
+
+SKIN
+
+Skin guard
+
+Static template
+
+8
+
+POLISH
+
+Texture, vignette, grain
+
+Static template
+
+“Activate only what is justified” is implemented with SetNodeEnabled(nodeIndex, isEnabled): the tree always exists, and the solver switches nodes on or off per shot. Apply with ApplyGradeFromDRX(path, gradeMode); 21.1.1 adds an option to apply across all node layers. nodeIndex is 1-based.
+
+11.3 Grading intent, then numbers
+
+For each target shot compute brightness distribution, shadow and highlight temperature, dominant colours, skin regions, saturation distribution, contrast, dynamic range, subject/background separation and lighting. The VLM receives reference observations + target observations + your preferences and returns a grading intent, not numbers:
+
+Retain warm practical highlights, cool ambient background, protect skin, deepen blacks selectively, add local subject separation, avoid a global teal/orange treatment.
+
+The solver then finds parameters. Why this beats LUT transfer: a night-cyan reference applied to a daylight beach would wreck it; the intent “separate warm from cool” instead becomes “increase tonal separation, keep highlights, cool the shadows only where physically plausible.”
+
+11.4 Solver and writers
+
+Parametric look model (exposure offset, contrast and pivot, shadow and highlight tint, black point, saturation by luma, hue guard) optimised against distance(stats(graded), target ranges) + penalties(clipping, skin deviation, noise lift) with a seeded gradient-free optimiser on downsampled frames.
+
+import numpy as npdef write_cube(path, fn, size=33):    g = np.linspace(0.0, 1.0, size)    b, gg, r = np.meshgrid(g, g, g, indexing='ij')        # red varies fastest in .cube    grid = np.stack([r, gg, b], axis=-1).reshape(-1, 3)    out = np.clip(fn(grid), 0.0, 1.0)    with open(path, 'w') as f:        f.write('LUT_3D_SIZE %d\n' % size)        for row in out:            f.write('%.6f %.6f %.6f\n' % tuple(row))item.SetCDL({'NodeIndex': '1', 'Slope': '1.04 1.00 0.97', 'Offset': '0.000 0.000 0.010',             'Power': '1.00 1.00 1.00', 'Saturation': '1.05'})   # write-only: no getter existsitem.GetNodeGraph().SetLUT(4, '/abs/path/luts/R031_s07.cube')
+
+11.5 Verification without a CDL getter
+
+Because CDL cannot be read back, verify by export: call item.ExportLUT(...) (17, 33 or 65 point; confirm the constant names in your version), apply the exported LUT and your intended transform to a synthetic colour grid, and require a mean error under 1 ΔE. Grab a still for visual confirmation. Also verify GetLUT(nodeIndex) returns the path you set.
+
+11.6 Subject separation routes (ranked)
+
+External matte node in the DRX template + SAM mattes via AddClipMattesToMediaPool (G5/G6).
+
+DRX authoring through the MCP advanced server (power windows, qualifiers, HSL curves).
+
+Grading in Fusion (fully scriptable; remember Fusion precedes Color-page nodes).
+
+Global grade only, flagged for you. Never fake it.
+
+11.7 Grade QC
+
+Target-statistics distance, clipping percentage, skin-hue deviation from the skin line, temporal stability (per-shot constants only), shot-to-shot consistency, gamut warnings, waveform and vectorscope from rendered frames. Match visual intent, not pixel distributions.
+
+VideoColorGrading as proposer: generate a candidate LUT from a hero frame and reference, score it with the same loss and constraints, use it only if it wins.
+
+12. Edit engine
+
+12.1 Sequencing
+
+Shot choice is an optimisation: per-slot cost (semantic fit, quality, rhythm distance from the profile's median shot, feasibility, mid-word cut, off-beat) plus per-cut cost (same shot size, same camera move, 180-degree flip), solved by a second-order Viterbi search so reuse is penalised two cuts back. Style weights are measured from your reels (median and 10th-percentile shot length, repeat habits), never guessed. Scoring terms: content fit, composition, quality, style fit, motion fit, audio fit, beat fit, narrative value, minus repetition, bad-cut and continuity penalties. The LLM supplies slot intent; the solver places clips.
+
+Beat logic: soft beat → hold; strong beat → candidate cut; drop → major visual change; build → increase density. Not every beat is a cut: your learned style decides. Cuts snap within ±40 ms (starting default).
+
+12.2 Pacing
+
+Store real statistics (median, p10, p90, cuts per minute, long-shot and rapid-cut frequency, beat alignment) and a pacing curve over time. Labels such as fast or restrained are views over the numbers.
+
+12.3 Text-based editing (first-class)
+
+Pipeline: Whisper word timestamps (and Resolve's own transcription with speaker data as cross-check) → transcript editor → semantic search → map words to source time → cut with handles (about 40 ms pre, 80 ms post, zero-crossing, 2–3 frame audio crossfade) → ripple → preserve linked A/V → verify → regenerate captions from the edited transcript.
+
+Natural-language commands become patches: “remove the hotel part”, “make it 22 seconds”, “remove filler words”, “speed up the intro”, “remove overlays from the second half”. Take ranking measures fluency only; performance stays your call.
+
+12.4 Transitions, fades, speed
+
+On 21.1, standard transitions and fades go through the new API calls (G12). Stylised ones (whip, zoom punch, glitch) are Fusion comps on overlapped clips. Speed: constant changes via API (G13); ramps only when verified, else pre-rendered. A ramp must state its purpose (emphasis, transition, energy, motion exaggeration, beat impact) and pick a curve from that purpose (for example 100→40→100 for emphasis), never random.
+
+12.5 Reframing
+
+Static reframe via item properties; dynamic subject-follow via a keyframed Fusion transform compiled from the subject track; Resolve's SmartReframe (async in 21.1.1) as an optional candidate scored by the same critic.
+
+13. Text, Fusion, masks, 3D
+
+13.1 Template library (templates only; no model-written Fusion code)
+
+text_basic, slide_in/out, typewriter, tracking_reveal, word_highlight, kinetic_words, masked_reveal, text_behind_subject, text3d_hover, text3d_tracking, tracked_callout, screen_replacement, subject_glow, subject_outline, speed_blur, cinematic_bloom, parallax, freeze_frame, picture_in_picture. Each ships a manifest (required and optional parameters, ranges, validation rules, preview, version) and uses tokens such as {{TEXT}}, {{FONT}}, {{SIZE}}, {{X}}, {{Y}}, {{IN_FRAME}}. The AI picks template + parameters only.
+
+13.2 Registry
+
+At start-up scan installed effects, Fusion macros, title templates, fonts, LUTs and DCTLs into plugin_registry.json. The planner may only name things in the registry.
+
+13.3 Placement and legibility
+
+Score candidate positions by distance from faces and subject matte, platform safe zones (set from a current screenshot of the app UI), saliency, your habitual position and contrast against the blurred local background. If a candidate fails, add outline, shadow or backing before moving the text. QC reads the rendered frame back with OCR.
+
+13.4 Text behind subject
+
+Background clip ─▶ Merge(Text+) ───────────▶ Merge(over) ─▶ MediaOut                                              ▲Subject cutout (foreground + SAM matte) ─────┘   subject sits above the text
+
+Variants: reveal inside silhouette, footage inside text, wipe reveal, occlusion by objects (SAM text prompt for the occluder).
+
+13.5 Mask engine
+
+Prompt (for example 'the rider on the motorcycle') → SAM 3.1 video segmentation and tracking → temporal smoothing, hole filling, edge feathering, flicker suppression → confidence score → attach to Resolve. Low-confidence shots (hair, glass, motion blur) go to a review queue with positive/negative point correction and re-propagation. Cache by shot ID + source hash + prompt. Magic Mask is the fallback when SAM fails.
+
+13.6 Tracking: use the simplest method that solves it
+
+Point track → planar track → Fusion tracker → external camera solve. A complex 3D solve is justified only when a planar track visibly slips.
+
+13.7 3D hover text, staged
+
+2.5D (reliable): Text+ with soft shadow and measured parallax.
+
+Fusion 3D (Text3D → Merge3D → Camera3D → Renderer3D) with a camera solved outside and imported into the Camera Tracker (G14); OpenPBR materials and Krokodove 3D tools for surface and light.
+
+Depth occlusion: a depth map lets objects pass in front of the text (needs a Z-aware merge; VERIFY).
+
+The planner may choose 3D only with a spatial reason (strong perspective, stable camera, negative space).
+
+13.8 Captions
+
+Word-level karaoke from aligned timestamps, 2–4 word chunks, no orphan words, profile style, OCR round-trip QC.
+
+14. Music engine (song choice)
+
+Index every track in your licensed or owned library: BPM, beat grid, downbeats, sections (intro, build, drop, outro), energy curve, RMS, spectral brightness, key/chroma, loudness, CLAP embedding, duration, and rights metadata (source, licence, platform-cleared yes/no).
+
+Score each candidate against the request (for example “dark cinematic motorcycle night reel, slow first half, hard drop near 11 s”):
+
+Term
+
+Meaning
+
+Semantic fit
+
+CLAP text/audio similarity to the brief and profile
+
+Tempo and energy fit
+
+BPM range and energy curve vs the profile and the footage's motion-energy curve
+
+Drop timing
+
+A strong downbeat or drop reachable at the hook or payoff
+
+Length fit
+
+A clean segment for the target duration
+
+Freshness
+
+Avoid repeating tracks across your recent reels
+
+Your preference
+
+Manual favourites and rejections
+
+Output: top 5 with reasons and 15-second previews. AUTO takes candidate 1; ASSISTED asks you.
+
+Alignment: choose the start offset so a downbeat lands on the first strong cut; end on a bar boundary; when tempo and duration disagree, re-cut the picture to the grid rather than time-stretching the song. Resolve Studio's own AI music-editing tool is an optional alternative for fitting a track to length; score its result with the same critic.
+
+Mix: duck under voice (sidechain in an ffmpeg pre-mix, or Fairlight where the API allows), whoosh and hit SFX on cuts from your SFX library, integrated loudness to your platform's target (-14 LUFS is a common reference; confirm current guidance) with true peak under -1 dBTP.
+
+Licence safety: a reference reel's music is analysis input only. Output uses your own music, a licensed library, royalty-cleared tracks or generated audio, with the source recorded. Platform-library trending sounds are not available to Resolve: the system leaves a silent guide track and a marker at the sync point so you add the sound in the app after export. Music generation (MusicGen and similar) is a later fallback; check the weights' licence before any commercial use.
+
+15. Controls and UI
+
+15.1 Sliders and switches (before the AI starts)
+
+Group
+
+Controls
+
+Project
+
+Type, platform, duration, aspect ratio, fps, resolution
+
+Editorial
+
+Pacing, story clarity, shot variety, beat sync, B-roll
+
+Visual
+
+Colour intensity, contrast, saturation, skin preservation, texture, motion effects
+
+Typography
+
+Text amount, caption density, font character, animation intensity, screen occupancy
+
+Effects
+
+Masking off/subtle/aggressive, 3D off/selective/frequent, tracking, motion graphics, glow, particles, speed ramps
+
+Audio
+
+Dialogue, music and SFX priority, music energy, beat sync
+
+Reference weights
+
+Per reel and per dimension (rhythm, colour, typography, Fusion, audio, composition)
+
+Aspect mode
+
+locked (never changed), guided (inside your limits), auto, off
+
+Run mode
+
+AUTO / ASSISTED / MANUAL × WATCH / STEP / TURBO
+
+15.2 Natural-language control
+
+Examples: “keep pacing aggressive but never cut during gestures”, “use Reel 4's colour separation but not its saturation”, “make the text feel embedded in the scene”, “no 3D unless the composition supports it”. The model converts these into Edit Spec diffs shown for confirmation before anything runs.
+
+15.3 Steering from inside Resolve
+
+The executor reads timeline markers as constraints: a red marker 'no text here', blue 'lock grade', green 'keep this cut'. Marker colours used for AI breadcrumbs (Section 4.4) are reserved so your markers and the AI's never collide.
+
+15.4 Screens
+
+Home (references, footage, style meters, Analyze, Build); Mission Control (Section 4); Review (before/after, decision list with because, approve/reject/edit, up to three variants); Reference Inspector; Style Explorer; Transcript Editor; Chat (patches). Build as a local web app first; wrap in Tauri later.
+
+16. Executor, safety and policy
+
+16.1 Resolve Adapter (one boundary)
+
+resolve/adapter/  client.py  timeline.py  media.py  color.py  fusion.py  render.py  verify.py  events.py
+
+No subsystem calls the MCP or the scripting API directly. The adapter exposes about a dozen high-level operations (analyze_project, create_timeline, insert_clip, move_clip, create_color_grade, create_fusion_comp, apply_text_template, attach_matte, render_preview, validate_timeline, rollback) over the maintainers' guarded workflow layer, and owns every version-specific workaround.
+
+16.2 Policy engine (runs after the validator, before the adapter)
+
+Rule
+
+Enforcement
+
+Never delete or modify source media
+
+Source paths read-only; analysis writes sidecars
+
+Never overwrite the original project or timeline
+
+Always create a new timeline/version
+
+Never touch locked tracks
+
+Check lock state first
+
+Never render over a source path
+
+Output path whitelist
+
+Never run model-written Fusion or Python code
+
+Template-only; raw Fusion access exists only in an explicit developer mode
+
+Never expose Resolve scripting on the network
+
+Local only; do not use network scripting mode
+
+Destructive operations
+
+Require confirmation or an explicit project policy
+
+Unknown plugin, font or effect
+
+Reject (registry check)
+
+Example: a plan step 'delete all footage' is rejected with the reason logged and shown in Mission Control.
+
+16.3 Project structure
+
+PROJECT / AI_EDIT / ASSEMBLY_V1 · COLOR_V1 · FUSION_V1 · FINAL_CANDIDATE · APPROVED
+
+One timeline version per stage (also your flip-between view in Resolve). Before every major write: duplicate the timeline and export a .drp snapshot; record the plan hash and Resolve version.
+
+16.4 Failure handling
+
+Known traps (from maintainers' catalogues): calls that return False/None silently, modals blocking automation, a null current page, partially applied settings, stalled renders, version-dependent behaviour. The adapter therefore writes, reads back, verifies, applies timeouts, runs a watchdog on renders, polls async jobs (21.1.1), and on any failure rolls back to the snapshot and raises a Mission Control alert.
+
+{"timestamp": "2026-10-09T12:04:11Z", "operation": "set_clip_grade", "target": "clip_032", "before": "lut:none", "after": "lut:R031_s07.cube", "status": "success", "verification": "passed"}
+
+Every mutation writes an operation-log line like this one.
+
+def apply_plan(plan, caps, run):    snap = snapshots.save(project, label='pre_apply')           # .drp + duplicate timeline    try:        tl = create_timeline(project, name='AP_%s_%s' % (plan.project, plan.hash[:8]))        for step in compile_steps(plan, caps):                   # structure > grade > text > audio            do_step(run, step, resolve, tl)                      # Section 4.4: event, follow, verify, breadcrumb            if step.failed:                raise StepFailed(step.name)    except Exception:        snapshots.restore(snap)        emit(run, status='rolled_back')        raise
+
+17. Critic, QC and repair
+
+Render pipeline: edit → low-res proxy (for example 540×960 H.264) → automated QC → optional human look → full-quality render → final QC. Never full-res first.
+
+Level
+
+Checks
+
+Blocks?
+
+L0 Schema
+
+EDG valid; files, rule IDs, registry items exist
+
+Yes
+
+L1 Timeline
+
+Gaps, overlaps, offline media, track conflicts, duration
+
+Yes
+
+L2 Frames
+
+OCR text match, text contrast and safe area, text-on-subject collision, matte flicker, black/white clipping
+
+Yes for text and clipping
+
+L3 Audio
+
+Integrated loudness, true peak, clipping, silence, sudden level changes, dialogue/music balance, cut-to-beat error
+
+Yes for clipping
+
+L4 Style
+
+Measured look vs target; which rules fired
+
+Warning
+
+L5 Editorial (VLM rubric)
+
+Does the first second hook? Cuts too frequent or awkward? Skin damaged? Transitions overused? Is 3D justified? Music peak matches visual peak? Audio intelligible?
+
+Warning (a flag, never an authority)
+
+The critic must return structured output, never just “looks good”:
+
+status: needs_revisionissues:  - {type: color, severity: 0.72, at_s: 12.4, description: subject separation weaker than reference intent}  - {type: editing, severity: 0.44, at_s: 18.1, description: two consecutive shots have near-identical framing}
+
+The repair agent turns issues into patches, applies them, re-renders only the affected range and re-checks; maximum three iterations, then it stops and shows you what remains. Final QC: duration, resolution, fps, audio, black frames, offline frames, subtitle overflow, clipping, render completeness.
+
+18. Learning loop and measurement
+
+Capture: (1) one-click feedback in Mission Control (thumbs, too much, too little, wrong shot, wrong colour, wrong text, wrong effect, wrong pacing); (2) implicit corrections read from the final timeline (cuts moved, text moved, contrast changed). Grade changes are measured by exporting stills/LUTs and recomputing statistics, since parameters cannot be read directly.
+
+Classify each correction: explicit positive, explicit negative, implicit correction, parameter adjustment, structural correction. Store AI decision, your correction, scene context and a confidence in the inference. Example: contrast 0.72 → 0.55 suggests “grade too aggressive” at confidence about 0.8, not certainty.
+
+Update: rule counts (support and contradiction) move; when the same correction recurs under matching conditions (default: 4 times) a proposed rule enters a review queue; nothing enters the KB silently; rules not reconfirmed for six months are flagged. Negative preferences and exceptions are updated the same way.
+
+Later: train small specialist scorers (shot selection, pacing, colour intensity, typography, effect choice) on your recorded decisions; consider adapters on the planner only after several hundred decisions, always against a held-out set. Fine-tuning the base VLM is a late option, not a start.
+
+Metrics that matter
+
+Metric
+
+Definition
+
+Correction rate
+
+cuts changed ÷ cuts made; grade nodes changed ÷ made; Fusion nodes changed ÷ made; captions moved ÷ created; music replaced; masks corrected
+
+Agreement
+
+AI choice vs your final choice, per dimension (shot, music, colour intent, text placement, mask)
+
+Time to final
+
+Minutes from footage to approved
+
+Calibration
+
+Predicted confidence vs actual acceptance
+
+Blind A/B
+
+AI draft vs your own edit
+
+The headline question is how much do you have to fix, not how pretty the render looks. Expect the curve: many corrections at V1, fewer by V5, mostly polish by V20 — an expectation to test, not a promise.
+
+19. Quality engineering and efficiency
+
+What “Microsoft-level” means here: reproducible, observable, versioned, testable, recoverable, safe, editable, auditable, fast, local. Not “magically perfect.”
+
+Contracts: JSON Schema + Pydantic for Edit Spec, EDG, rules, capsules, events, patches; versioned with migrations.
+
+Versioning: record analysis model, style schema, solver, Fusion template and Resolve versions in every run manifest, with seeds and prompt versions.
+
+Tests: unit (solvers, LUT range/monotonicity); golden (fixed footage and seeds → structural assertions: clip count, order, duration, tracks, templates present, nodes exist, render succeeds; pixels are not compared exactly); live-Resolve integration nightly on a dedicated machine; visual regression on a personal benchmark of 20 reference reels and 20 footage projects.
+
+Failure matrix (must degrade gracefully): offline source, missing media, locked track, wrong or mixed fps, modal window, Resolve restart, MCP restart, render failure, invalid mask, missing font, missing plugin, missing music, empty transcript, no face found, SAM failure, VLM timeout.
+
+Observability: structured logs by run ID, per-stage timings, artefact store, decision ledger, event stream, optional flight recorder.
+
+Release discipline: semantic versions for code and KB, CHANGELOG, feature flags, canary profile for new rules.
+
+Efficiency budgets (planning estimates for the 24 GB tier; replace with G9 measurements):
+
+Stage
+
+Estimate
+
+Reference perception per 30 s reel
+
+1–3 min
+
+Footage index per minute of raw footage
+
+2–5 min
+
+Planning (retrieve, reason, solve)
+
+1–3 min
+
+Mattes per shot
+
+20–90 s
+
+Grade solve per shot
+
+about 5 s
+
+Compile and apply (TURBO)
+
+under 1 min
+
+Proxy render and QC
+
+1–3 min
+
+First draft per reel
+
+target 20 min or less (WATCH mode adds its deliberate delays)
+
+Levers: lower analysis fps, smaller reasoner for the structure pass, matte caching, overnight perception, the second GPU.
+
+20. Roadmap and acceptance tests
+
+Build a thin vertical slice first, then widen. Durations are rough estimates for one developer using an AI coding assistant, part-time.
+
+Phase
+
+Deliverable
+
+Rough time
+
+Done when
+
+0
+
+Gates G1–G16, capabilities.yaml
+
+~1 wk
+
+Every gate recorded; paths chosen
+
+1
+
+Resolve adapter, EDG, events, Mission Control v0, snapshots
+
+~2 wks
+
+5 clips + song → beat-cut timeline, watchable live, rollback works
+
+2
+
+Perception + calibration set
+
+~2 wks
+
+Estimators recover known looks
+
+3
+
+Style Brain v1 (capsules, one profile, approval flow)
+
+~2–3 wks
+
+Principles + at least 3 validated conditional rules
+
+4
+
+Grade engine
+
+~2 wks
+
+DRX template + CDL + LUT per shot; export-verified
+
+5
+
+Text, masks, Fusion templates
+
+~2 wks
+
+Behind-subject text and captions pass OCR QC
+
+6
+
+Music engine
+
+~1–2 wks
+
+Top 5 with reasons; downbeat within ±40 ms
+
+7
+
+Planner, critic, repair
+
+~2 wks
+
+Build → critique → patch → re-render without a full rebuild
+
+8
+
+UI (Brief, Review, Transcript, Chat, Inspector)
+
+~1–2 wks
+
+You steer without code
+
+9
+
+Learning loop, hardening
+
+ongoing
+
+Corrections yield reviewed rules
+
+Acceptance ladder (from the ChatGPT draft, extended)
+
+Foundation: 5 reference reels + 10 raw clips + 1 song → style capsule, footage analysis, 20–30 s timeline in Resolve, non-destructive grade, captions, preview render. No Fusion yet.
+
+Compositing: masking, text behind subject, tracked text as editable Fusion comps.
+
+Spatial and rhythm: 3D hover text, music selection, beat alignment, speed ramps.
+
+Self-correction: critic finds issues, patches, re-renders the affected range.
+
+Learning: edit 01 → your corrections → preference extraction → edit 02 measurably closer to your recorded choices.
+
+Visibility: at every stage, every executor step is visible in Resolve and Mission Control, and you can Pause, Step and Undo.
+
+Build order inside the slice: Resolve control → footage analysis → reference analysis → style DB → planner → timeline builder → grade → Fusion templates → music → critic → learning → UI polish. Do not build glamorous Fusion before the base editor makes good cuts.
+
+21. Risks, limits and legal
+
+Risk
+
+Mitigation
+
+Resolve update changes or breaks a call
+
+Pin version; gates; one adapter; test 21.1.1 on a branch
+
+Colour nodes cannot be created
+
+DRX template + enable/disable nodes; DRX authoring route
+
+GPU contention between Resolve AI tools and local models
+
+Scheduler, second GPU, never concurrent
+
+VLM mislabels a scene
+
+Fixed vocabulary, calibration set, approval of rules
+
+Overfitting to few reels
+
+Support thresholds, leave-one-reel-out, profile isolation
+
+Reference reels are others' work
+
+Keep derived features and thumbnails only; do not redistribute; do not scrape against a platform's terms
+
+Model and music licences
+
+LICENSES.md; SAM terms recorded; rights field per track
+
+Live view lags or fails to repaint
+
+G11 gate, STEP mode, breadcrumbs, Mission Control thumbnails
+
+Scope creep
+
+Vertical slice; feature flags
+
+It will not: judge acting, guarantee a take is best, build grades outside the template route, or replace your final eye.
+
+22. Appendix
+
+A. First-week checklist
+
+Install Resolve Studio 21.1; back up the project library first (21.1 projects will not open in 20.3.2); set external scripting to Local.
+
+Install the Resolve MCP from the upstream repository; run its doctor script.
+
+Run G1, G3, G4, G11 first: they decide how much of the design stands.
+
+Hand-build the 8-node DRX template and two Fusion text templates.
+
+Create the calibration set (your footage, 10 known looks, reel-style re-encode).
+
+Collect 15–25 reels for one profile; tag them.
+
+Commit schemas first (Edit Spec, EDG, rule, capsule, event, patch).
+
+B. Reference repositories — final roles
+
+Repo
+
+Role
+
+samuelgursky/davinci-resolve-mcp
+
+Operational Resolve bridge (guarded workflows, advanced DRX tools)
+
+lordhoell/davinci-resolve-mcp, other Resolve MCPs, Resolve-fusion-mcp
+
+Reference implementations and fallbacks only
+
+MEX-creator/easy-edit (EditDNA)
+
+Reference analyser: shot, transition, OCR and beat wiring
+
+mindsurf0176/editstyle (CutAI)
+
+Portable-style format and style-learning ideas
+
+krshailendra/Agentic-Video-Editor
+
+Cost-function sequencing and OTIO export ideas
+
+seunghyuns98/VideoColorGrading
+
+Optional LUT proposer
+
+Borrow primitives, normalise them into our schemas, and keep one reasoning layer and one execution layer. Do not simply stack the repositories.
+
+C. Inputs that tune the build
+
+Operating system, GPU and VRAM (single or dual), RAM.
+
+Whether footage is log or ordinary phone Rec.709.
+
+Delivery platforms and loudness target.
+
+Reels per style and your top two or three profiles.
+
+Fonts you own; music and SFX library situation.
+
+D. Sources and what is estimate
+
+Checked against: the five repositories you supplied, the ChatGPT draft, Resolve 21.1 and 21.1.1 release coverage, current scripting guides and the Resolve MCP documentation. Estimates and starting defaults (timings, thresholds, sample sizes, effort) are planning values to be replaced by your gates, calibration set and G9 benchmarks.

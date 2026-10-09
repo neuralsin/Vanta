@@ -453,7 +453,7 @@ async def execute_plan(
                         artifact=digest,
                     )
                 )
-            except Exception as rollback_error:  # noqa: BLE001
+            except Exception as rollback_error:
                 event_sink(
                     VantaEvent(
                         run_id=plan.run_id,

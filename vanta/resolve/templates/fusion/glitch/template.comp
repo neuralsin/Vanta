@@ -1,0 +1,62 @@
+Composition {
+	CurrentTime = 0,
+	RenderRange = { 0, {{LAST}} },
+	GlobalRange = { 0, {{LAST}} },
+	CurrentID = 128,
+	HiQ = true,
+	PlaybackUpdateMode = 0,
+	Version = "Fusion Studio 21.1",
+	SavedOutputs = 0,
+	HeldTools = 0,
+	DisabledTools = 0,
+	LockedTools = 0,
+	AudioOffset = 0,
+	AutoRenderRange = true,
+	Prefs = {
+		Comp = {
+			FrameFormat = { Width = {{WIDTH}}, Height = {{HEIGHT}}, AspectX = 1, AspectY = 1 },
+		},
+	},
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			ExtentSet = true,
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				LayerName = Input { Value = "Layer 1", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		GlitchX = BezierSpline {
+			SplineColor = { Red = 250, Green = 59, Blue = 49 },
+			NameSet = true,
+			KeyFrames = { {{#KEYS}}[{{FRAME}}] = { {{X}}, Flags = { StepIn = true } }, {{/KEYS}} }
+		},
+		GlitchY = BezierSpline {
+			SplineColor = { Red = 252, Green = 131, Blue = 47 },
+			NameSet = true,
+			KeyFrames = { {{#KEYS}}[{{FRAME}}] = { {{Y}}, Flags = { StepIn = true } }, {{/KEYS}} }
+		},
+		GlitchPath = XYPath {
+			ShowKeyPoints = false,
+			DrawMode = "ModifyOnly",
+			Inputs = {
+				X = Input { SourceOp = "GlitchX", Source = "Value", },
+				Y = Input { SourceOp = "GlitchY", Source = "Value", },
+			},
+		},
+		GlitchXf = Transform {
+			Inputs = {
+				Center = Input { SourceOp = "GlitchPath", Source = "Value", },
+				Edges = Input { Value = 3, },
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 300, 0 } },
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "GlitchXf", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 1100, 0 } },
+		},
+	},
+}

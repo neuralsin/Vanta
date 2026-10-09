@@ -1,0 +1,128 @@
+{
+  "name": "text_basic",
+  "version": "1.0.0",
+  "category": "text",
+  "description": "Clean title with optional soft shadow and outline; fades in and out.",
+  "file": "template.comp",
+  "params": [
+    {
+      "name": "text",
+      "type": "string",
+      "required": true,
+      "default": null,
+      "max_length": 120
+    },
+    {
+      "name": "font",
+      "type": "font",
+      "required": false,
+      "default": "Arial"
+    },
+    {
+      "name": "style",
+      "type": "string",
+      "required": false,
+      "default": "Bold",
+      "max_length": 40
+    },
+    {
+      "name": "size",
+      "type": "number",
+      "required": false,
+      "default": 0.08,
+      "min": 0.01,
+      "max": 0.6,
+      "description": "Fusion Text+ size"
+    },
+    {
+      "name": "color",
+      "type": "color",
+      "required": false,
+      "default": "#FFFFFF"
+    },
+    {
+      "name": "center",
+      "type": "point",
+      "required": false,
+      "default": [
+        0.5,
+        0.6
+      ],
+      "description": "Fusion coordinates (y up)"
+    },
+    {
+      "name": "shadow_opacity",
+      "type": "number",
+      "required": false,
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "shadow_softness",
+      "type": "number",
+      "required": false,
+      "default": 4,
+      "min": 0,
+      "max": 40
+    },
+    {
+      "name": "outline",
+      "type": "number",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "description": "outline opacity"
+    },
+    {
+      "name": "outline_width",
+      "type": "number",
+      "required": false,
+      "default": 0.004,
+      "min": 0,
+      "max": 0.05
+    },
+    {
+      "name": "outline_color",
+      "type": "color",
+      "required": false,
+      "default": "#000000"
+    },
+    {
+      "name": "in_frame",
+      "type": "int",
+      "required": false,
+      "default": 0,
+      "min": 0,
+      "max": 100000,
+      "description": "first frame (clip-relative)"
+    },
+    {
+      "name": "out_frame",
+      "type": "int",
+      "required": false,
+      "default": null,
+      "min": 1,
+      "max": 100000,
+      "description": "last frame (clip-relative)"
+    },
+    {
+      "name": "anim_frames",
+      "type": "int",
+      "required": false,
+      "default": 8,
+      "min": 1,
+      "max": 60
+    }
+  ],
+  "requires_matte": false,
+  "spatial_reason_required": false,
+  "route": "clip_comp",
+  "gate": "G3",
+  "fallback": null,
+  "tags": [
+    "title",
+    "caption"
+  ]
+}

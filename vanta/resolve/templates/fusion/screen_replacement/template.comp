@@ -1,0 +1,68 @@
+Composition {
+	CurrentTime = 0,
+	RenderRange = { 0, {{LAST}} },
+	GlobalRange = { 0, {{LAST}} },
+	CurrentID = 128,
+	HiQ = true,
+	PlaybackUpdateMode = 0,
+	Version = "Fusion Studio 21.1",
+	SavedOutputs = 0,
+	HeldTools = 0,
+	DisabledTools = 0,
+	LockedTools = 0,
+	AudioOffset = 0,
+	AutoRenderRange = true,
+	Prefs = {
+		Comp = {
+			FrameFormat = { Width = {{WIDTH}}, Height = {{HEIGHT}}, AspectX = 1, AspectY = 1 },
+		},
+	},
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			ExtentSet = true,
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				LayerName = Input { Value = "Layer 1", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		Screen1 = Loader {
+			Clips = {
+				Clip {
+					ID = "Clip1",
+					Filename = {{INSET}},
+					StartFrame = 0,
+					LengthSetManually = true,
+					TrimIn = 0,
+					TrimOut = {{LAST}},
+					GlobalStart = 0,
+					GlobalEnd = {{LAST}}
+				}
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 300 } },
+		},
+		Corner1 = CornerPositioner {
+			Inputs = {
+				TopLeft = Input { Value = { {{TL_X}}, {{TL_Y}} }, },
+				TopRight = Input { Value = { {{TR_X}}, {{TR_Y}} }, },
+				BottomLeft = Input { Value = { {{BL_X}}, {{BL_Y}} }, },
+				BottomRight = Input { Value = { {{BR_X}}, {{BR_Y}} }, },
+				Input = Input { SourceOp = "Screen1", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 300, 300 } },
+		},
+		ScreenOver = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "Corner1", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 900, 0 } },
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "ScreenOver", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 1100, 0 } },
+		},
+	},
+}

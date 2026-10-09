@@ -1,0 +1,60 @@
+Composition {
+	CurrentTime = 0,
+	RenderRange = { 0, {{LAST}} },
+	GlobalRange = { 0, {{LAST}} },
+	CurrentID = 128,
+	HiQ = true,
+	PlaybackUpdateMode = 0,
+	Version = "Fusion Studio 21.1",
+	SavedOutputs = 0,
+	HeldTools = 0,
+	DisabledTools = 0,
+	LockedTools = 0,
+	AudioOffset = 0,
+	AutoRenderRange = true,
+	Prefs = {
+		Comp = {
+			FrameFormat = { Width = {{WIDTH}}, Height = {{HEIGHT}}, AspectX = 1, AspectY = 1 },
+		},
+	},
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			ExtentSet = true,
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				LayerName = Input { Value = "Layer 1", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		Freeze = TimeStretcher {
+			Inputs = {
+				SourceTime = Input { SourceOp = "FreezeTime", Source = "Value", },
+				Input = Input { SourceOp = "MediaIn1", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 400, 0 } },
+		},
+		FreezeTime = BezierSpline {
+			SplineColor = { Red = 220, Green = 220, Blue = 220 },
+			NameSet = true,
+			KeyFrames = { [{{IN}}] = { {{IN}}, Flags = { Linear = true } }, [{{FREEZE_AT}}] = { {{FREEZE_AT}}, Flags = { Linear = true } }, [{{OUT}}] = { {{FREEZE_AT}}, Flags = { Linear = true } } }
+		},
+		FreezeFlash = BrightnessContrast {
+			Inputs = {
+				Gain = Input { SourceOp = "FlashGain", Source = "Value", },
+				Input = Input { SourceOp = "Freeze", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 600, 0 } },
+		},
+		FlashGain = BezierSpline {
+			SplineColor = { Red = 220, Green = 220, Blue = 220 },
+			NameSet = true,
+			KeyFrames = { [{{FREEZE_AT}}] = { 1, Flags = { Linear = true } }, [{{FREEZE_AT_P1}}] = { 1.6, Flags = { Linear = true } }, [{{FREEZE_AT_P4}}] = { 1, Flags = { Linear = true } } }
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "FreezeFlash", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 1100, 0 } },
+		},
+	},
+}

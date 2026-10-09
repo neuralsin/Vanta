@@ -28,3 +28,10 @@ exclude = ["tests*", "scripts*"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM101", "RUF100"]
+ignore = ["E501", "B008", "B905", "E741"]
+
+[tool.ruff.lint.per-file-ignores]
+"vanta/resolve/broker_worker.py" = ["E402"]

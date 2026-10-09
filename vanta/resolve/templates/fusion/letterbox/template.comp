@@ -1,0 +1,71 @@
+Composition {
+	CurrentTime = 0,
+	RenderRange = { 0, {{LAST}} },
+	GlobalRange = { 0, {{LAST}} },
+	CurrentID = 128,
+	HiQ = true,
+	PlaybackUpdateMode = 0,
+	Version = "Fusion Studio 21.1",
+	SavedOutputs = 0,
+	HeldTools = 0,
+	DisabledTools = 0,
+	LockedTools = 0,
+	AudioOffset = 0,
+	AutoRenderRange = true,
+	Prefs = {
+		Comp = {
+			FrameFormat = { Width = {{WIDTH}}, Height = {{HEIGHT}}, AspectX = 1, AspectY = 1 },
+		},
+	},
+	Tools = ordered() {
+		MediaIn1 = MediaIn {
+			ExtentSet = true,
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				LayerName = Input { Value = "Layer 1", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		BarTop = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 1 }, },
+				Width = Input { Value = 1, },
+				Height = Input { Value = {{BAR}}, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 300, -100 } },
+		},
+		BarBottom = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0 }, },
+				Width = Input { Value = 1, },
+				Height = Input { Value = {{BAR}}, },
+				EffectMask = Input { SourceOp = "BarTop", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 300, -200 } },
+		},
+		Bars = Background {
+			Inputs = {
+				GlobalOut = Input { Value = {{LAST}}, },
+				Width = Input { Value = {{WIDTH}}, },
+				Height = Input { Value = {{HEIGHT}}, },
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "BarBottom", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 450, -200 } },
+		},
+		BarsOver = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "MediaIn1", Source = "Output", },
+				Foreground = Input { SourceOp = "Bars", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 900, 0 } },
+		},
+		MediaOut1 = MediaOut {
+			Inputs = {
+				Input = Input { SourceOp = "BarsOver", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 1100, 0 } },
+		},
+	},
+}

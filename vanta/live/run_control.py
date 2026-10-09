@@ -18,6 +18,7 @@ class RunControl:
     watch_delay_s: float = 0.7
     paused: bool = False
     stopped: bool = False
+    skip_requested: bool = False
     _resume_event: asyncio.Event = field(default_factory=asyncio.Event, repr=False)
     _step_event: asyncio.Event = field(default_factory=asyncio.Event, repr=False)
 
@@ -54,6 +55,22 @@ class RunControl:
         if not self.stopped:
             self._step_event.set()
 
+    def skip(self) -> None:
+        """STEP mode 'Skip': release the checkpoint and mark the pending step as skipped."""
+        if not self.stopped:
+            self.skip_requested = True
+            self._step_event.set()
+
+    def consume_skip(self) -> bool:
+        skipped, self.skip_requested = self.skip_requested, False
+        return skipped
+
+    def set_mode(self, mode: RunMode, watch_delay_s: float | None = None) -> None:
+        self.run_mode = mode
+        if watch_delay_s is not None:
+            self.watch_delay_s = watch_delay_s
+        self._step_event.set()
+
     def stop(self) -> None:
         self.stopped = True
         self.paused = False
@@ -61,4 +78,4 @@ class RunControl:
         self._step_event.set()
 
     def snapshot(self) -> dict[str, object]:
-        return {"run_mode": self.run_mode.value, "paused": self.paused, "stopped": self.stopped}
+        return {"run_mode": self.run_mode.value, "paused": self.paused, "stopped": self.stopped, "skip_requested": self.skip_requested}
